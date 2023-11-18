@@ -1,11 +1,18 @@
 ---
 title: "Hands-on Exercise 1: Geospatial Data Wrangling with R"
+date: "18 November 2023"
+date-modified: "last-modified"
+format: html
+execute:
+  echo: true
+  eval: true
+  warning: false
 editor: visual
 ---
 
 ## 1. Overview
 
-This hands-on exercise, I learn to import and wrangling geospatial data using appropriate R packages.
+In this hands-on exercise, I learn to import and wrangling geospatial data using appropriate R packages.
 
 ## 2. Getting Started
 
