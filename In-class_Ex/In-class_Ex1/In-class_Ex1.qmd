@@ -10,7 +10,11 @@ execute:
 editor: visual
 ---
 
-## Getting Started
+## **1. Overview**
+
+This is an in-class exercise where we apply what we have learned from the class and the hands-on exercise1 and 1a
+
+## 2. Getting Started
 
 The code chunk below loads the following packages:
 
@@ -22,14 +26,41 @@ The code chunk below loads the following packages:
 pacman:: p_load(tmap, sf, tidyverse)
 ```
 
-###importing
+## **3. Importing Data into R**
 
-Firstly , we will import that *Passenger Volume By Origin Destination Bus Stops* data set dowonloaded from LTA Datamall by using `read_csv()` of **readr** package
+### **3.1 The Data**
+
+3 datasets needed in this exercise are:
+
+-   Master Plan 2014 Subzone Boundary (Web) (i.e. `MP14_SUBZONE_WEB_PL`) in ESRI shapefile format. It can be downloaded at [data.gov.sg](https://data.gov.sg/) This is a geospatial data. It consists of the geographical boundary of Singapore at the planning subzone level. The data is based on URA Master Plan 2014.
+
+-   Bus stop location in ESRI in shapefile format. It can be downloaded at [LTADataMall](https://www.mytransport.sg/content/mytransport/home/dataMall.html). It consists of geospatial data that are point representations to indicate positions where buses should stop to pick up or drop off passengers.
+
+-   Passenger Volume by Origin Destination Bus Stops in csv format. It can be downloaded at [LTADataMall](https://www.mytransport.sg/content/mytransport/home/dataMall.html). It identifies the number of trips by weekdays and weekends from origin to destination bus stops.
+
+### **3.2 Importing Attribute Data into R**
+
+We will import that *Passenger Volume By Origin Destination Bus Stops* data set downloaded from LTA Datamall by using `read_csv()` of **readr** package
 
 ```{r}
 #|eval: false
-odbus <- read_csv("data/aspatial/origin_destination_bus_202308.csv")
+odbus2008 <- read_csv("data/aspatial/origin_destination_bus_202308.csv")
+odbus2009 <- read_csv("data/aspatial/origin_destination_bus_202309.csv")
+odbus2010 <- read_csv("data/aspatial/origin_destination_bus_202310.csv")
 ```
+
+### **3.3 Data preparation**
+
+#### 3.4.1 Data wrangling
+
+We will merge the 3 odbus data into 1 file.
+
+```{r}
+combined_data <- bind_rows (odbus2008, odbus2009, odbus2010)
+write.csv(combined_data, "data/rds/odbus.csv", row.names = FALSE)
+```
+
+By converting columns ORIGIN_PT_CODE and DESTINATION_PT_CODE to factors, we are explicitly indicating that these columns represent categorical data.
 
 ```{r}
 #|eval: false
@@ -38,24 +69,49 @@ odbus$DESTINATION_PT_CODE <- as.factor(odbus$DESTINATION_PT_CODE)
 
 ```
 
+The following data wrangling and transformation functions will be used:
+
+-   *filter()*, *group_by()*
+
 ```{r}
 #|eval: false
 origintrip_7_9 <- odbus %>%
-  filter (Day_Type == "WEEKDAY") %>%
+  filter (DAY_TYPE == "WEEKDAY") %>%
   filter (TIME_PER_HOUR >= 7 & TIME_PER_HOUR <=9) %>%
-  group_by(ORIGIN_PTE_CODE) %>%
+  group_by(ORIGIN_PT_CODE) %>%
   summarise(TRIPS = sum(TOTAL_TRIPS))
 ```
 
+### **3.4 Importing Geospatial Data into R**
+
+The code chunk below
+
+-   uses the *st_read()* function of **sf** package to import `Busstop` shapefile into R as a simple feature data frame called `busstop`
+
+-   Assigning EPSG code **3414** to busstop data frame.
+
 ```{r}
 #|eval: false
-bustop <- st_read(dsn = "data/geospatial)", layer = "BusStop") %>%
+busstop <- st_read(dsn = "data/geospatial", layer = "BusStop") %>%
   st_transform(crs = 3414)
+
+st_crs(busstop)
+```
+
+The code chunk below uses
+
+-   the *st_read()* function of **sf** package to import `MP14_SUBZONE_WEB_PL` shapefile into R as a simple feature data frame called `mpsz`
+
+-   Assigning EPSG code **3414** to mpsz data frame.
+
+```{r}
+st_crs(mpsz)
 ```
 
 ```{r}
 #|eval: false
-mpsz <- st_read(dsn = "data/geospatial)", layer = "MPSZ-2019") %>%
- 
-mpsz
+mpsz <- st_read(dsn = "data/geospatial", layer = "MPSZ-2019") %>%
+  st_transform(crs = 3414)
+
+st_crs(mpsz)
 ```
