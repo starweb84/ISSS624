@@ -1,11 +1,11 @@
 ---
-title: "Hands-on Exercise 1"
+title: "Hands-on Exercise 1: Geospatial Data Wrangling with R"
 editor: visual
 ---
 
 ## Overview
 
-This is the overview paragraph.
+This hands-on exercise, i
 
 ## Getting Started
 

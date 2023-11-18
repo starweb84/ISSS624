@@ -1,0 +1,11 @@
+---
+title: "In-class Exercise 1: My First Date with Geospatial Data Analytics"
+date: "18 November 2023"
+date-modified: "last-modified"
+format: html
+execute:
+  echo: true
+  eval: true
+  warning: false
+editors: visual
+---
