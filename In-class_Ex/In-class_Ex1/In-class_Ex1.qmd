@@ -64,6 +64,7 @@ By converting columns ORIGIN_PT_CODE and DESTINATION_PT_CODE to factors, we are 
 
 ```{r}
 #|eval: false
+odbus <-read.csv ("data/rds/odbus.csv")
 odbus$ORIGIN_PT_CODE <- as.factor(odbus$ORIGIN_PT_CODE)
 odbus$DESTINATION_PT_CODE <- as.factor(odbus$DESTINATION_PT_CODE)
 
@@ -103,10 +104,6 @@ The code chunk below uses
 -   the *st_read()* function of **sf** package to import `MP14_SUBZONE_WEB_PL` shapefile into R as a simple feature data frame called `mpsz`
 
 -   Assigning EPSG code **3414** to mpsz data frame.
-
-```{r}
-st_crs(mpsz)
-```
 
 ```{r}
 #|eval: false
