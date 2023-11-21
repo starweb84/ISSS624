@@ -12,11 +12,11 @@ website:
           - text: Hands-on Exercise 1a
             href: Hands-on_Ex/Hands-on_Ex1a/Hands-on_Ex1a.html
           - text: Hands-on Exercise 2
-            href: Hands-on_Ex/Hands-on_Ex1a/Hands-on_Ex2.html
+            href: Hands-on_Ex/Hands-on_Ex2/Hands-on_Ex2.html
           - text: Hands-on Exercise 2a
-            href: Hands-on_Ex/Hands-on_Ex1a/Hands-on_Ex2a.html
+            href: Hands-on_Ex/Hands-on_Ex2a/Hands-on_Ex2a.html
           - text: Hands-on Exercise 2b
-            href: Hands-on_Ex/Hands-on_Ex1a/Hands-on_Ex2b.html
+            href: Hands-on_Ex/Hands-on_Ex2b/Hands-on_Ex2b.html
       - text: In-class Exercise
         menu: 
           - text: In-class Exercise 1
