@@ -271,7 +271,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="overview" class="level2">
 <h2 class="anchored" data-anchor-id="overview"><strong>1. Overview</strong></h2>
-<p>In this hands-on exercise, I will learn how to compute spatial weights using R. By the end to this hands-on exercise, you will be able to:</p>
+<p>In this hands-on exercise, I will learn how to compute spatial weights using R. By the end to this hands-on exercise, I will be able to:</p>
 <ul>
 <li><p>import geospatial data using appropriate function(s) of <strong>sf</strong> package,</p></li>
 <li><p>import csv file using appropriate function of <strong>readr</strong> package,</p></li>
@@ -289,7 +289,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul>
 <section id="getting-started" class="level3">
 <h3 class="anchored" data-anchor-id="getting-started"><strong>2.1 Getting Started</strong></h3>
-<p>Before we get started, we need to ensure that <strong>spdep</strong>, <strong>sf</strong>, <strong>tmap</strong> and <strong>tidyverse</strong> packages of R are currently installed in your R.</p>
+<p>Before we get started, we need to ensure that <strong>spdep</strong>, <strong>sf</strong>, <strong>tmap</strong> and <strong>tidyverse</strong> packages of R are currently installed in R.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(sf, spdep, tmap, tidyverse, knitr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
@@ -297,7 +297,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="getting-the-data-into-r-environment" class="level2">
 <h2 class="anchored" data-anchor-id="getting-the-data-into-r-environment"><strong>3 Getting the Data Into R Environment</strong></h2>
-<p>In this section, you will learn how to bring a geospatial data and its associated attribute table into R environment. The geospatial data is in ESRI shapefile format and the attribute table is in csv fomat.</p>
+<p>In this section, I will learn how to bring a geospatial data and its associated attribute table into R environment. The geospatial data is in ESRI shapefile format and the attribute table is in csv fomat.</p>
 <section id="import-shapefile-into-r-environment" class="level3">
 <h3 class="anchored" data-anchor-id="import-shapefile-into-r-environment"><strong>3.1 Import shapefile into r environment</strong></h3>
 <p>The code chunk below uses <a href="https://r-spatial.github.io/sf/reference/st_read.html"><em>st_read()</em></a> of <strong>sf</strong> package to import Hunan shapefile into R. The imported shapefile will be <strong>simple features</strong> Object of <strong>sf</strong>.</p>
@@ -348,7 +348,7 @@ Geodetic CRS:  WGS 84</code></pre>
 </section>
 <section id="computing-contiguity-spatial-weights" class="level2">
 <h2 class="anchored" data-anchor-id="computing-contiguity-spatial-weights"><strong>5 Computing Contiguity Spatial Weights</strong></h2>
-<p>In this section, you will learn how to use&nbsp;<a href="https://r-spatial.github.io/spdep/reference/poly2nb.html"><em>poly2nb()</em></a>&nbsp;of&nbsp;<strong>spdep</strong>&nbsp;package to compute contiguity weight matrices for the study area. This function builds a neighbours list based on regions with contiguous boundaries. If you look at the documentation you will see that you can pass a “queen” argument that takes TRUE or FALSE as options. If you do not specify this argument the default is set to TRUE, that is, if you don’t specify queen = FALSE this function will return a list of first order neighbours using the Queen criteria.</p>
+<p>In this section, I will learn how to use&nbsp;<a href="https://r-spatial.github.io/spdep/reference/poly2nb.html"><em>poly2nb()</em></a>&nbsp;of&nbsp;<strong>spdep</strong>&nbsp;package to compute contiguity weight matrices for the study area. This function builds a neighbours list based on regions with contiguous boundaries. If I look at the documentation I will see that I can pass a “queen” argument that takes TRUE or FALSE as options. If I do not specify this argument the default is set to TRUE, that is, if I don’t specify queen = FALSE this function will return a list of first order neighbours using the Queen criteria.</p>
 <section id="computing-queen-contiguity-based-neighbours" class="level3">
 <h3 class="anchored" data-anchor-id="computing-queen-contiguity-based-neighbours"><strong>5.1 Computing (QUEEN) contiguity based neighbours</strong></h3>
 <p>The code chunk below is used to compute Queen contiguity weight matrix.</p>
@@ -405,7 +405,7 @@ Link number distribution:
 </div>
 </div>
 <p>The printed output above shows that the GDPPC of the five nearest neighbours based on Queen’s method are 20981, 34592, 24473, 21311 and 22879 respectively.</p>
-<p>You can display the complete weight matrix by using str().</p>
+<p>I can display the complete weight matrix by using str().</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(wm_q)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
