@@ -228,14 +228,14 @@
     "href": "Hands-on_Ex/Hands-on_Ex2/Hands-on_Ex2.html",
     "title": "Spatial Weights and Applications",
     "section": "",
-    "text": "use"
+    "text": "In this hands-on exercise, I will learn how to compute spatial weights using R. By the end to this hands-on exercise, you will be able to:\n\nimport geospatial data using appropriate function(s) of sf package,\nimport csv file using appropriate function of readr package,\nperform relational join using appropriate join function of dplyr package,\ncompute spatial weights using appropriate functions of spdep package, and\ncalculate spatially lagged variables using appropriate functions of spdep package."
   },
   {
     "objectID": "Hands-on_Ex/Hands-on_Ex2/Hands-on_Ex2.html#overview",
     "href": "Hands-on_Ex/Hands-on_Ex2/Hands-on_Ex2.html#overview",
     "title": "Spatial Weights and Applications",
-    "section": "1. Overview",
-    "text": "1. Overview\nIn this hands-on exercise, I will learn how to compute spatial weights using R. By the end to this hands-on exercise, you will be able to:\n\nimport geospatial data using appropriate function(s) of sf package,\nimport csv file using appropriate function of readr package,\nperform relational join using appropriate join function of dplyr package,\ncompute spatial weights using appropriate functions of spdep package, and\ncalculate spatially lagged variables using appropriate functions of spdep package."
+    "section": "",
+    "text": "In this hands-on exercise, I will learn how to compute spatial weights using R. By the end to this hands-on exercise, you will be able to:\n\nimport geospatial data using appropriate function(s) of sf package,\nimport csv file using appropriate function of readr package,\nperform relational join using appropriate join function of dplyr package,\ncompute spatial weights using appropriate functions of spdep package, and\ncalculate spatially lagged variables using appropriate functions of spdep package."
   },
   {
     "objectID": "Hands-on_Ex/Hands-on_Ex2/Hands-on_Ex2.html#the-study-area-and-data",
