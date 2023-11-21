@@ -1,5 +1,5 @@
 ---
-title: "Spatial Weights and Applications"
+title: "Hands-on Exercise 2: Spatial Weights and Applications"
 date: "22 November 2023"
 date-modified: "last-modified"
 format: html
