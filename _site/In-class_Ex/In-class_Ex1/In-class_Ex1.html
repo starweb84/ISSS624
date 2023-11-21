@@ -187,15 +187,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview"><strong>1. Overview</strong></a></li>
+  <li><a href="#the-task" id="toc-the-task" class="nav-link active" data-scroll-target="#the-task"><strong>1. The Task</strong></a></li>
   <li><a href="#getting-started" id="toc-getting-started" class="nav-link" data-scroll-target="#getting-started">2. Getting Started</a></li>
   <li><a href="#importing-data-into-r" id="toc-importing-data-into-r" class="nav-link" data-scroll-target="#importing-data-into-r"><strong>3. Importing Data into R</strong></a>
   <ul class="collapse">
   <li><a href="#the-data" id="toc-the-data" class="nav-link" data-scroll-target="#the-data"><strong>3.1 The Data</strong></a></li>
-  <li><a href="#importing-attribute-data-into-r" id="toc-importing-attribute-data-into-r" class="nav-link" data-scroll-target="#importing-attribute-data-into-r"><strong>3.2 Importing Attribute Data into R</strong></a></li>
-  <li><a href="#data-preparation" id="toc-data-preparation" class="nav-link" data-scroll-target="#data-preparation"><strong>3.3 Data preparation</strong></a></li>
-  <li><a href="#importing-geospatial-data-into-r" id="toc-importing-geospatial-data-into-r" class="nav-link" data-scroll-target="#importing-geospatial-data-into-r"><strong>3.4 Importing Geospatial Data into R</strong></a></li>
+  <li><a href="#importing-the-od-data" id="toc-importing-the-od-data" class="nav-link" data-scroll-target="#importing-the-od-data"><strong>3.2 Importing the OD data</strong></a></li>
   </ul></li>
+  <li><a href="#working-with-geospatial-data" id="toc-working-with-geospatial-data" class="nav-link" data-scroll-target="#working-with-geospatial-data"><strong>4. Working with Geospatial Data</strong></a>
+  <ul class="collapse">
+  <li><a href="#extracting-the-study-data" id="toc-extracting-the-study-data" class="nav-link" data-scroll-target="#extracting-the-study-data"><strong>4.1 Extracting the study data</strong></a></li>
+  <li><a href="#importing-geospatial-data-into-r" id="toc-importing-geospatial-data-into-r" class="nav-link" data-scroll-target="#importing-geospatial-data-into-r"><strong>4.2 Importing Geospatial Data into R</strong></a></li>
+  </ul></li>
+  <li><a href="#geospatial-data-wrangling" id="toc-geospatial-data-wrangling" class="nav-link" data-scroll-target="#geospatial-data-wrangling"><strong>5. Geospatial data wrangling</strong></a>
+  <ul class="collapse">
+  <li><a href="#combining-busstop-and-mpsz" id="toc-combining-busstop-and-mpsz" class="nav-link" data-scroll-target="#combining-busstop-and-mpsz"><strong>Combining Busstop and mpsz</strong></a></li>
+  </ul></li>
+  <li><a href="#choropleth-visualisation" id="toc-choropleth-visualisation" class="nav-link" data-scroll-target="#choropleth-visualisation"><strong>6. Choropleth Visualisation</strong></a></li>
   </ul>
 </nav>
     </div>
@@ -222,7 +230,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">November 18, 2023</p>
+      <p class="date-modified">November 21, 2023</p>
     </div>
   </div>
     
@@ -231,9 +239,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </header>
 
-<section id="overview" class="level2">
-<h2 class="anchored" data-anchor-id="overview"><strong>1. Overview</strong></h2>
-<p>This is an in-class exercise where we apply what we have learned from the class and the hands-on exercise1 and 1a</p>
+<section id="the-task" class="level2">
+<h2 class="anchored" data-anchor-id="the-task"><strong>1. The Task</strong></h2>
+<p>In this in-class exercise, you are required to prepare a choropleth map showing the distribution of passenger trips at planning sub-zone by integrating&nbsp;<em>Passenger Volume by Origin Destination Bus Stops</em>&nbsp;and bus stop data sets downloaded from LTA DataMall and Planning Sub-zone boundary of URA Master Plan 2019 downloaded from data.gov.sg.</p>
+<p>The specific task of this in-class exercise are as follows:</p>
+<ul>
+<li><p>to import <em>Passenger Volume by Origin Destination Bus Stops</em> data set downloaded from LTA DataMall in to RStudio environment,</p></li>
+<li><p>to import geospatial data in ESRI shapefile format into sf data frame format,</p></li>
+<li><p>to perform data wrangling by using appropriate functions from tidyverse and sf pakcges, and</p></li>
+<li><p>to visualise the distribution of passenger trip by using tmap methods and functions.</p></li>
+</ul>
 </section>
 <section id="getting-started" class="level2">
 <h2 class="anchored" data-anchor-id="getting-started">2. Getting Started</h2>
@@ -242,9 +257,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>tmap: for thematic mapping</li>
 <li>sf: for geospatial data handling</li>
 <li>tidyverse: for non-spatial data handling</li>
+<li>knitr for creating html table.</li>
 </ul>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span> <span class="fu">p_load</span>(tmap, sf, tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span> <span class="fu">p_load</span>(tmap, sf, tidyverse,knitr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="importing-data-into-r" class="level2">
@@ -258,8 +274,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p>Passenger Volume by Origin Destination Bus Stops in csv format. It can be downloaded at <a href="https://www.mytransport.sg/content/mytransport/home/dataMall.html">LTADataMall</a>. It identifies the number of trips by weekdays and weekends from origin to destination bus stops.</p></li>
 </ul>
 </section>
-<section id="importing-attribute-data-into-r" class="level3">
-<h3 class="anchored" data-anchor-id="importing-attribute-data-into-r"><strong>3.2 Importing Attribute Data into R</strong></h3>
+<section id="importing-the-od-data" class="level3">
+<h3 class="anchored" data-anchor-id="importing-the-od-data"><strong>3.2 Importing the OD data</strong></h3>
 <p>We will import that <em>Passenger Volume By Origin Destination Bus Stops</em> data set downloaded from LTA Datamall by using <code>read_csv()</code> of <strong>readr</strong> package</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">#|eval: false</span></span>
@@ -267,48 +283,132 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>odbus2009 <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"data/aspatial/origin_destination_bus_202309.csv"</span>)</span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>odbus2010 <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"data/aspatial/origin_destination_bus_202310.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-</section>
-<section id="data-preparation" class="level3">
-<h3 class="anchored" data-anchor-id="data-preparation"><strong>3.3 Data preparation</strong></h3>
-<section id="data-wrangling" class="level4">
-<h4 class="anchored" data-anchor-id="data-wrangling">3.4.1 Data wrangling</h4>
 <p>We will merge the 3 odbus data into 1 file.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>combined_data <span class="ot">&lt;-</span> <span class="fu">bind_rows</span> (odbus2008, odbus2009, odbus2010)</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(combined_data, <span class="st">"data/rds/odbus.csv"</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>By converting columns ORIGIN_PT_CODE and DESTINATION_PT_CODE to factors, we are explicitly indicating that these columns represent categorical data.</p>
+<p>A quick check of odbus tibble data frame shows that the values in OROGIN_PT_CODE and DESTINATON_PT_CODE are in numeric data type.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">#|eval: false</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>odbus <span class="ot">&lt;-</span><span class="fu">read.csv</span> (<span class="st">"data/rds/odbus.csv"</span>)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>odbus<span class="sc">$</span>ORIGIN_PT_CODE <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(odbus<span class="sc">$</span>ORIGIN_PT_CODE)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>odbus<span class="sc">$</span>DESTINATION_PT_CODE <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(odbus<span class="sc">$</span>DESTINATION_PT_CODE)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(combined_data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 17,118,005
+Columns: 7
+$ YEAR_MONTH          &lt;chr&gt; "2023-08", "2023-08", "2023-08", "2023-08", "2023-…
+$ DAY_TYPE            &lt;chr&gt; "WEEKDAY", "WEEKENDS/HOLIDAY", "WEEKENDS/HOLIDAY",…
+$ TIME_PER_HOUR       &lt;dbl&gt; 16, 16, 14, 14, 17, 17, 17, 17, 7, 17, 14, 10, 10,…
+$ PT_TYPE             &lt;chr&gt; "BUS", "BUS", "BUS", "BUS", "BUS", "BUS", "BUS", "…
+$ ORIGIN_PT_CODE      &lt;chr&gt; "04168", "04168", "80119", "80119", "44069", "4406…
+$ DESTINATION_PT_CODE &lt;chr&gt; "10051", "10051", "90079", "90079", "17229", "1722…
+$ TOTAL_TRIPS         &lt;dbl&gt; 7, 2, 3, 10, 5, 4, 3, 22, 3, 3, 7, 1, 3, 1, 3, 1, …</code></pre>
 </div>
+</div>
+<p>By converting columns ORIGIN_PT_CODE and DESTINATION_PT_CODE to factor data type using tidyverse functions, we are explicitly indicating that these columns represent categorical data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">#|eval: false</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>odbus <span class="ot">&lt;-</span><span class="fu">read.csv</span> (<span class="st">"data/rds/odbus.csv"</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>odbus<span class="sc">$</span>ORIGIN_PT_CODE <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(odbus<span class="sc">$</span>ORIGIN_PT_CODE)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>odbus<span class="sc">$</span>DESTINATION_PT_CODE <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(odbus<span class="sc">$</span>DESTINATION_PT_CODE)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now both of them are in factor data type now.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(odbus)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 17,118,005
+Columns: 7
+$ YEAR_MONTH          &lt;chr&gt; "2023-08", "2023-08", "2023-08", "2023-08", "2023-…
+$ DAY_TYPE            &lt;chr&gt; "WEEKDAY", "WEEKENDS/HOLIDAY", "WEEKENDS/HOLIDAY",…
+$ TIME_PER_HOUR       &lt;int&gt; 16, 16, 14, 14, 17, 17, 17, 17, 7, 17, 14, 10, 10,…
+$ PT_TYPE             &lt;chr&gt; "BUS", "BUS", "BUS", "BUS", "BUS", "BUS", "BUS", "…
+$ ORIGIN_PT_CODE      &lt;fct&gt; 4168, 4168, 80119, 80119, 44069, 44069, 20281, 202…
+$ DESTINATION_PT_CODE &lt;fct&gt; 10051, 10051, 90079, 90079, 17229, 17229, 20141, 2…
+$ TOTAL_TRIPS         &lt;int&gt; 7, 2, 3, 10, 5, 4, 3, 22, 3, 3, 7, 1, 3, 1, 3, 1, …</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="working-with-geospatial-data" class="level2">
+<h2 class="anchored" data-anchor-id="working-with-geospatial-data"><strong>4. Working with Geospatial Data</strong></h2>
+<p>In this section, you are required to import two shapefile into RStudio, they are:</p>
+<ul>
+<li><p>BusStop: This data provides the location of bus stop as at last quarter of 2022.</p></li>
+<li><p>MPSZ-2019: This data provides the sub-zone boundary of URA Master Plan 2019.</p></li>
+</ul>
+<section id="extracting-the-study-data" class="level3">
+<h3 class="anchored" data-anchor-id="extracting-the-study-data"><strong>4.1 Extracting the study data</strong></h3>
+<p>For the purpose of this exercise, we will extract commuting flows on weekday and between 7 and 9 o’clock time intervals. Call the output tibble data table as origin7_9.</p>
 <p>The following data wrangling and transformation functions will be used:</p>
 <ul>
 <li><em>filter()</em>,&nbsp;<em>group_by()</em></li>
 </ul>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">#|eval: false</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>origintrip_7_9 <span class="ot">&lt;-</span> odbus <span class="sc">%&gt;%</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span> (DAY_TYPE <span class="sc">==</span> <span class="st">"WEEKDAY"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span> (TIME_PER_HOUR <span class="sc">&gt;=</span> <span class="dv">7</span> <span class="sc">&amp;</span> TIME_PER_HOUR <span class="sc">&lt;=</span><span class="dv">9</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(ORIGIN_PT_CODE) <span class="sc">%&gt;%</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">TRIPS =</span> <span class="fu">sum</span>(TOTAL_TRIPS))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">#|eval: false</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>origin7_9 <span class="ot">&lt;-</span> odbus <span class="sc">%&gt;%</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span> (DAY_TYPE <span class="sc">==</span> <span class="st">"WEEKDAY"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span> (TIME_PER_HOUR <span class="sc">&gt;=</span> <span class="dv">7</span> <span class="sc">&amp;</span> TIME_PER_HOUR <span class="sc">&lt;=</span><span class="dv">9</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(ORIGIN_PT_CODE) <span class="sc">%&gt;%</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">TRIPS =</span> <span class="fu">sum</span>(TOTAL_TRIPS))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>It should look similar to the data table below.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">head</span>(origin7_9))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<table class="table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th style="text-align: left;">ORIGIN_PT_CODE</th>
+<th style="text-align: right;">TRIPS</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">1012</td>
+<td style="text-align: right;">4527</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">1013</td>
+<td style="text-align: right;">2119</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">1019</td>
+<td style="text-align: right;">4249</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">1029</td>
+<td style="text-align: right;">6975</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">1039</td>
+<td style="text-align: right;">7701</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">1059</td>
+<td style="text-align: right;">4119</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>We will save the output in rds format for future used.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(origin7_9, <span class="st">"data/rds/origin7_9.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The code chunk below will be used to import the save origin7_9.rds into R environment.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>origin7_9 <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">"data/rds/origin7_9.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-</section>
 <section id="importing-geospatial-data-into-r" class="level3">
-<h3 class="anchored" data-anchor-id="importing-geospatial-data-into-r"><strong>3.4 Importing Geospatial Data into R</strong></h3>
+<h3 class="anchored" data-anchor-id="importing-geospatial-data-into-r"><strong>4.2 Importing Geospatial Data into R</strong></h3>
 <p>The code chunk below</p>
 <ul>
 <li><p>uses the&nbsp;<em>st_read()</em>&nbsp;function of&nbsp;<strong>sf</strong>&nbsp;package to import&nbsp;<code>Busstop</code>&nbsp;shapefile into R as a simple feature data frame called&nbsp;<code>busstop</code></p></li>
 <li><p>Assigning EPSG code <strong>3414</strong> to busstop data frame.</p></li>
 </ul>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">#|eval: false</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>busstop <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="at">dsn =</span> <span class="st">"data/geospatial"</span>, <span class="at">layer =</span> <span class="st">"BusStop"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">3414</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">#|eval: false</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>busstop <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="at">dsn =</span> <span class="st">"data/geospatial"</span>, <span class="at">layer =</span> <span class="st">"BusStop"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">3414</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Reading layer `BusStop' from data source 
   `D:\starweb84\ISSS624\In-class_Ex\In-class_Ex1\data\geospatial' 
@@ -319,7 +419,7 @@ Dimension:     XY
 Bounding box:  xmin: 3970.122 ymin: 26482.1 xmax: 48284.56 ymax: 52983.82
 Projected CRS: SVY21</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(busstop)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(busstop)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Coordinate Reference System:
   User input: EPSG:3414 
@@ -370,9 +470,9 @@ PROJCRS["SVY21 / Singapore TM",
 <li><p>Assigning EPSG code <strong>3414</strong> to mpsz data frame.</p></li>
 </ul>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">#|eval: false</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>mpsz <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="at">dsn =</span> <span class="st">"data/geospatial"</span>, <span class="at">layer =</span> <span class="st">"MPSZ-2019"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">3414</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co">#|eval: false</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>mpsz <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="at">dsn =</span> <span class="st">"data/geospatial"</span>, <span class="at">layer =</span> <span class="st">"MPSZ-2019"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">3414</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Reading layer `MPSZ-2019' from data source 
   `D:\starweb84\ISSS624\In-class_Ex\In-class_Ex1\data\geospatial' 
@@ -383,7 +483,7 @@ Dimension:     XY
 Bounding box:  xmin: 103.6057 ymin: 1.158699 xmax: 104.0885 ymax: 1.470775
 Geodetic CRS:  WGS 84</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(mpsz)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(mpsz)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Coordinate Reference System:
   User input: EPSG:3414 
@@ -428,9 +528,74 @@ PROJCRS["SVY21 / Singapore TM",
     ID["EPSG",3414]]</code></pre>
 </div>
 </div>
-
-
 </section>
+</section>
+<section id="geospatial-data-wrangling" class="level2">
+<h2 class="anchored" data-anchor-id="geospatial-data-wrangling"><strong>5. Geospatial data wrangling</strong></h2>
+<section id="combining-busstop-and-mpsz" class="level3">
+<h3 class="anchored" data-anchor-id="combining-busstop-and-mpsz"><strong>Combining Busstop and mpsz</strong></h3>
+<p>Code chunk below populates the planning subzone code (i.e.&nbsp;SUBZONE_C) of mpsz sf data frame into busstop sf data frame.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>busstop_mpsz <span class="ot">&lt;-</span> <span class="fu">st_intersection</span>(busstop, mpsz) <span class="sc">%&gt;%</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(BUS_STOP_N, SUBZONE_C) <span class="sc">%&gt;%</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_drop_geometry</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Before moving to the next step, it is wise to save the output into rds format.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(busstop_mpsz, <span class="st">"data/rds/busstop_mpsz.csv"</span>)  </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Next, we are going to append the planning subzone code from busstop_mpsz data frame onto odbus7_9 data frame.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>origin_data <span class="ot">&lt;-</span> <span class="fu">left_join</span>(origin7_9 , busstop_mpsz,</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"ORIGIN_PT_CODE"</span> <span class="ot">=</span> <span class="st">"BUS_STOP_N"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">ORIGIN_BS =</span> ORIGIN_PT_CODE,</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>         <span class="at">ORIGIN_SZ =</span> SUBZONE_C)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Before continue, it is a good practice for us to check for duplicating records.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>duplicate <span class="ot">&lt;-</span> origin_data <span class="sc">%&gt;%</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by_all</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">n</span>()<span class="sc">&gt;</span><span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>If duplicated records are found, the code chunk below will be used to retain the unique records.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>origin_data <span class="ot">&lt;-</span> <span class="fu">unique</span>(origin_data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>It will be a good practice to confirm if the duplicating records issue has been addressed fully.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>mpsz_origtrip <span class="ot">&lt;-</span> <span class="fu">left_join</span>(mpsz, </span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>                           origin_data,</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>                           <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"SUBZONE_C"</span> <span class="ot">=</span> <span class="st">"ORIGIN_SZ"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="choropleth-visualisation" class="level2">
+<h2 class="anchored" data-anchor-id="choropleth-visualisation"><strong>6. Choropleth Visualisation</strong></h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(mpsz_origtrip)<span class="sc">+</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_fill</span>(<span class="st">"TRIPS"</span>, </span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>          <span class="at">style =</span> <span class="st">"quantile"</span>, </span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>          <span class="at">palette =</span> <span class="st">"Blues"</span>,</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>          <span class="at">title =</span> <span class="st">"Passenger trips"</span>) <span class="sc">+</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_layout</span>(<span class="at">main.title =</span> <span class="st">"Passenger trips generated at planning sub-zone level"</span>,</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>            <span class="at">main.title.position =</span> <span class="st">"center"</span>,</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">main.title.size =</span> <span class="fl">1.2</span>,</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>            <span class="at">legend.height =</span> <span class="fl">0.45</span>, </span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>            <span class="at">legend.width =</span> <span class="fl">0.35</span>,</span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>            <span class="at">frame =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_compass</span>(<span class="at">type=</span><span class="st">"8star"</span>, <span class="at">size =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_scale_bar</span>() <span class="sc">+</span></span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_grid</span>(<span class="at">alpha =</span><span class="fl">0.2</span>) <span class="sc">+</span></span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_credits</span>(<span class="st">"Source: Planning Sub-zone boundary from Urban Redevelopment Authorithy (URA)</span><span class="sc">\n</span><span class="st"> and Population data from Department of Statistics DOS"</span>, </span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>             <span class="at">position =</span> <span class="fu">c</span>(<span class="st">"left"</span>, <span class="st">"bottom"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="In-class_Ex1_files/figure-html/unnamed-chunk-19-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+
+
 </section>
 
 </main> <!-- /main -->

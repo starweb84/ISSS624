@@ -10,9 +10,19 @@ execute:
 editor: visual
 ---
 
-## **1. Overview**
+## **1. The Task**
 
-This is an in-class exercise where we apply what we have learned from the class and the hands-on exercise1 and 1a
+In this in-class exercise, you are required to prepare a choropleth map showing the distribution of passenger trips at planning sub-zone by integrating *Passenger Volume by Origin Destination Bus Stops* and bus stop data sets downloaded from LTA DataMall and Planning Sub-zone boundary of URA Master Plan 2019 downloaded from data.gov.sg.
+
+The specific task of this in-class exercise are as follows:
+
+-   to import *Passenger Volume by Origin Destination Bus Stops* data set downloaded from LTA DataMall in to RStudio environment,
+
+-   to import geospatial data in ESRI shapefile format into sf data frame format,
+
+-   to perform data wrangling by using appropriate functions from tidyverse and sf pakcges, and
+
+-   to visualise the distribution of passenger trip by using tmap methods and functions.
 
 ## 2. Getting Started
 
@@ -21,9 +31,10 @@ The code chunk below loads the following packages:
 -   tmap: for thematic mapping
 -   sf: for geospatial data handling
 -   tidyverse: for non-spatial data handling
+-   knitr for creating html table.
 
 ```{r}
-pacman:: p_load(tmap, sf, tidyverse)
+pacman:: p_load(tmap, sf, tidyverse,knitr)
 ```
 
 ## **3. Importing Data into R**
@@ -38,7 +49,7 @@ pacman:: p_load(tmap, sf, tidyverse)
 
 -   Passenger Volume by Origin Destination Bus Stops in csv format. It can be downloaded at [LTADataMall](https://www.mytransport.sg/content/mytransport/home/dataMall.html). It identifies the number of trips by weekdays and weekends from origin to destination bus stops.
 
-### **3.2 Importing Attribute Data into R**
+### **3.2 Importing the OD data**
 
 We will import that *Passenger Volume By Origin Destination Bus Stops* data set downloaded from LTA Datamall by using `read_csv()` of **readr** package
 
@@ -49,10 +60,6 @@ odbus2009 <- read_csv("data/aspatial/origin_destination_bus_202309.csv")
 odbus2010 <- read_csv("data/aspatial/origin_destination_bus_202310.csv")
 ```
 
-### **3.3 Data preparation**
-
-#### 3.4.1 Data wrangling
-
 We will merge the 3 odbus data into 1 file.
 
 ```{r}
@@ -60,7 +67,13 @@ combined_data <- bind_rows (odbus2008, odbus2009, odbus2010)
 write.csv(combined_data, "data/rds/odbus.csv", row.names = FALSE)
 ```
 
-By converting columns ORIGIN_PT_CODE and DESTINATION_PT_CODE to factors, we are explicitly indicating that these columns represent categorical data.
+A quick check of odbus tibble data frame shows that the values in OROGIN_PT_CODE and DESTINATON_PT_CODE are in numeric data type.
+
+```{r}
+glimpse(combined_data)
+```
+
+By converting columns ORIGIN_PT_CODE and DESTINATION_PT_CODE to factor data type using tidyverse functions, we are explicitly indicating that these columns represent categorical data.
 
 ```{r}
 #|eval: false
@@ -70,20 +83,56 @@ odbus$DESTINATION_PT_CODE <- as.factor(odbus$DESTINATION_PT_CODE)
 
 ```
 
+Now both of them are in factor data type now.
+
+```{r}
+glimpse(odbus)
+```
+
+## **4. Working with Geospatial Data**
+
+In this section, you are required to import two shapefile into RStudio, they are:
+
+-   BusStop: This data provides the location of bus stop as at last quarter of 2022.
+
+-   MPSZ-2019: This data provides the sub-zone boundary of URA Master Plan 2019.
+
+### **4.1 Extracting the study data**
+
+For the purpose of this exercise, we will extract commuting flows on weekday and between 7 and 9 o'clock time intervals. Call the output tibble data table as origin7_9.
+
 The following data wrangling and transformation functions will be used:
 
 -   *filter()*, *group_by()*
 
 ```{r}
 #|eval: false
-origintrip_7_9 <- odbus %>%
+origin7_9 <- odbus %>%
   filter (DAY_TYPE == "WEEKDAY") %>%
   filter (TIME_PER_HOUR >= 7 & TIME_PER_HOUR <=9) %>%
   group_by(ORIGIN_PT_CODE) %>%
   summarise(TRIPS = sum(TOTAL_TRIPS))
 ```
 
-### **3.4 Importing Geospatial Data into R**
+It should look similar to the data table below.
+
+```{r}
+kable(head(origin7_9))
+```
+
+We will save the output in rds format for future used.
+
+```{r}
+write_rds(origin7_9, "data/rds/origin7_9.rds")
+```
+
+The code chunk below will be used to import the save origin7_9.rds into R environment.
+
+```{r}
+origin7_9 <- read_rds("data/rds/origin7_9.rds")
+```
+
+### **4.2 Importing Geospatial Data into R**
 
 The code chunk below
 
@@ -111,4 +160,77 @@ mpsz <- st_read(dsn = "data/geospatial", layer = "MPSZ-2019") %>%
   st_transform(crs = 3414)
 
 st_crs(mpsz)
+```
+
+## **5. Geospatial data wrangling**
+
+### **Combining Busstop and mpsz**
+
+Code chunk below populates the planning subzone code (i.e. SUBZONE_C) of mpsz sf data frame into busstop sf data frame.
+
+```{r}
+busstop_mpsz <- st_intersection(busstop, mpsz) %>%
+  select(BUS_STOP_N, SUBZONE_C) %>%
+  st_drop_geometry()
+```
+
+Before moving to the next step, it is wise to save the output into rds format.
+
+```{r}
+write_rds(busstop_mpsz, "data/rds/busstop_mpsz.csv")  
+```
+
+Next, we are going to append the planning subzone code from busstop_mpsz data frame onto odbus7_9 data frame.
+
+```{r}
+origin_data <- left_join(origin7_9 , busstop_mpsz,
+            by = c("ORIGIN_PT_CODE" = "BUS_STOP_N")) %>%
+  rename(ORIGIN_BS = ORIGIN_PT_CODE,
+         ORIGIN_SZ = SUBZONE_C)
+```
+
+Before continue, it is a good practice for us to check for duplicating records.
+
+```{r}
+duplicate <- origin_data %>%
+  group_by_all() %>%
+  filter(n()>1) %>%
+  ungroup()
+```
+
+If duplicated records are found, the code chunk below will be used to retain the unique records.
+
+```{r}
+origin_data <- unique(origin_data)
+```
+
+It will be a good practice to confirm if the duplicating records issue has been addressed fully.
+
+```{r}
+mpsz_origtrip <- left_join(mpsz, 
+                           origin_data,
+                           by = c("SUBZONE_C" = "ORIGIN_SZ"))
+```
+
+## **6. Choropleth Visualisation**
+
+```{r}
+tm_shape(mpsz_origtrip)+
+  tm_fill("TRIPS", 
+          style = "quantile", 
+          palette = "Blues",
+          title = "Passenger trips") +
+  tm_layout(main.title = "Passenger trips generated at planning sub-zone level",
+            main.title.position = "center",
+            main.title.size = 1.2,
+            legend.height = 0.45, 
+            legend.width = 0.35,
+            frame = TRUE) +
+  tm_borders(alpha = 0.5) +
+  tm_compass(type="8star", size = 2) +
+  tm_scale_bar() +
+  tm_grid(alpha =0.2) +
+  tm_credits("Source: Planning Sub-zone boundary from Urban Redevelopment Authorithy (URA)\n and Population data from Department of Statistics DOS", 
+             position = c("left", "bottom"))
+
 ```
