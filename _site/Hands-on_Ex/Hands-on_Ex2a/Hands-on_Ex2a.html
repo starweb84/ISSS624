@@ -224,7 +224,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#spatial-correlogram" id="toc-spatial-correlogram" class="nav-link" data-scroll-target="#spatial-correlogram"><strong>5 Spatial Correlogram</strong></a>
   <ul class="collapse">
   <li><a href="#compute-morans-i-correlogram" id="toc-compute-morans-i-correlogram" class="nav-link" data-scroll-target="#compute-morans-i-correlogram"><strong>5.1 Compute Moran’s I correlogram</strong></a></li>
-  <li><a href="#compute-gearys-c-correlogram-and-plot" id="toc-compute-gearys-c-correlogram-and-plot" class="nav-link" data-scroll-target="#compute-gearys-c-correlogram-and-plot"><strong>5.2 Compute Geary's C correlogram and plot</strong></a></li>
+  <li><a href="#compute-gearys-c-correlogram-and-plot" id="toc-compute-gearys-c-correlogram-and-plot" class="nav-link" data-scroll-target="#compute-gearys-c-correlogram-and-plot"><strong>5.2 Compute Geary’s C correlogram and plot</strong></a></li>
   </ul></li>
   </ul>
 </nav>
@@ -686,8 +686,8 @@ Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
 <p>The spatial correlogram and the analysis results suggest the presence of spatial autocorrelation in hunan$GDPPC, and the significance codes indicate which distance lags are statistically significant.</p>
 </section>
 <section id="compute-gearys-c-correlogram-and-plot" class="level3">
-<h3 class="anchored" data-anchor-id="compute-gearys-c-correlogram-and-plot"><strong>5.2 Compute Geary's C correlogram and plot</strong></h3>
-<p>In the code chunk below, <em>sp.correlogram()</em> of <strong>spdep</strong> package is used to compute a 6-lag spatial correlogram of GDPPC. The global spatial autocorrelation used in Geary's C. The <strong>plot()</strong> of base Graph is then used to plot the output.</p>
+<h3 class="anchored" data-anchor-id="compute-gearys-c-correlogram-and-plot"><strong>5.2 Compute Geary’s C correlogram and plot</strong></h3>
+<p>In the code chunk below, <em>sp.correlogram()</em> of <strong>spdep</strong> package is used to compute a 6-lag spatial correlogram of GDPPC. The global spatial autocorrelation used in Geary’s C. The <strong>plot()</strong> of base Graph is then used to plot the output.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>GC_corr <span class="ot">&lt;-</span> <span class="fu">sp.correlogram</span>(wm_q, </span>
 <span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>                          hunan<span class="sc">$</span>GDPPC, </span>
