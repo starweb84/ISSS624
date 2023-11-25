@@ -1,0 +1,86 @@
+---
+title: "In-class Exercise 2: Spatial Weights"
+date: "25 November 2023"
+date-modified: "last-modified"
+format: html
+execute:
+  echo: true
+  eval: true
+  warning: false
+editor: visual
+---
+
+## **1. Overview**
+
+In this in-class exercise, I will learn the usage of sfdep packages, and understanding more on spatial weights.
+
+## **Installing and Loading the R Packages**
+
+Five R packages will be used for this in-class exercise, they are sf, sfdep, tmap and tidyverse.
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code" 
+pacman::p_load(sf, sfdep, tmap, tidyverse, knitr)
+```
+
+## **The Data**
+
+Two data sets will be used in this hands-on exercise, they are:
+
+-   Hunan county boundary layer. This is a geospatial data set in ESRI shapefile format.
+
+-   Hunan_2012.csv: This csv file contains selected Hunan's local development indicators in 2012.
+
+## **Getting the Data Into R Environment**
+
+### **Import Geospatial data into r environment**
+
+The code chunk below uses [*st_read()*](https://r-spatial.github.io/sf/reference/st_read.html) of **sf** package to import Hunan shapefile into R. The imported shapefile will be **simple features** Object of **sf**.
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code" 
+hunan <- st_read(dsn = "data/geospatial",layer = "Hunan")
+```
+
+### **Import attribute table into r environment**
+
+Next, we will import *Hunan_2012.csv* into R by using *read_csv()* of **readr** package. The output is R dataframe class.
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code" 
+hunan2012 <- read_csv("data/aspatial/Hunan_2012.csv")
+```
+
+### **Combining both data frame by using left join**
+
+The code chunk below will be used to update the attribute table of *hunan*'s SpatialPolygonsDataFrame with the attribute fields of *hunan2012* dataframe. This is performed by using *left_join()* of **dplyr** package.
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code" 
+hunan_GDPPC <- left_join(hunan,hunan2012)%>%
+  select(1:4, 7, 15)
+```
+
+In order to retain the geospatial properties, the left data frame must be the sf data frame (i.e. hunan).
+
+### **Deriving Contiguity weights: Queen's Method**
+
+In the code chunk below, queen method is used to derive the contiguity weights.
+
+```{r}
+
+wm_q <- hunan_GDPPC %>%
+  mutate (nb = st_contiguity(geometry),
+          wt = st_weights(nb, style = "W"),
+          .before = 1)
+```
+
+Notice that st_weights() provide free arguments, they are
+
+-   nb: a neighbor list object as craeted by st_neighbour()
+
+-   style: default "W" for row standardized weights. This value can also be "B", "C", "U", "minmax" and "S". B is the basic binary coding, W is row standardised (sums over all kinks to n), C is globally standardized (sums over all kinks to n), U is equal to C divded by the number of neighbours.
