@@ -247,7 +247,7 @@ wm_fd <- hunan_GDPPC %>%
 
 -   [`st_weights()`](https://sfdep.josiahparry.com/reference/st_weights.html) is then used to calculate polygon spatial weights of the nb list. Note that:
 
-    -   the default `style` argument is set to \"W\" for row standardized weights, and
+    -   the default `style` argument is set to "W" for row standardized weights, and
 
     -   the default `allow_zero` is set to TRUE, assigns zero as lagged value to zone without neighbors.
 
@@ -263,8 +263,4 @@ wm_ad <- hunan_GDPPC %>%
                .before = 1)
 ```
 
-
-Things to learn from the code chunk above
-st_contiguity() of sfdep is used to identify the neighbours by using contiguity criteria. The output is a list of neighbours (i.e. nb).
-st_inverse_distance() is then used to calculate inverse distance weights of neighbours on the nb list.
-
+Things to learn from the code chunk above st_contiguity() of sfdep is used to identify the neighbours by using contiguity criteria. The output is a list of neighbours (i.e. nb). st_inverse_distance() is then used to calculate inverse distance weights of neighbours on the nb list.
