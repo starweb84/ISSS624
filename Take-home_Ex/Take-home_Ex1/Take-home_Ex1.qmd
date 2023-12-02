@@ -12,9 +12,9 @@ editor: visual
 
 ## **1. Overview**
 
-The digitization of urban infrastructures, such as buses and public utilities, generates datasets that, when analyzed through technologies like GPS, reveal valuable patterns in human movement. This information enhances urban management and aids both private and public transport providers in making informed decisions for a competitive edge in the evolving urban landscape.
+The digitization of urban infrastructures, such as buses and public utilities, generates datasets that, when analyzed through technologies like GPS, reveal valuable patterns in human movement. This information enhances urban management and aids both private and public transport providers in making informed decisions for a competitive edge in the evolving urban landscape. Hence there is value in performing analysis on such information, which is further showcased in this exercise.
 
-## 1.1 Objectives
+### 1.1 Objectives
 
 In this exercise, the focus will be to identify, analyse and compare the spatial patterns, through using of Geovisualisation and Analysis, and Local Indicators of Spatial Association (LISA) to uncover the spatial and spatio-temporal mobility patterns of public bus passengers in Singapore.
 
@@ -43,39 +43,76 @@ The specific tasks of this exercise are as follows:
 
 -   With reference to the analysis results, draw statistical conclusions (not more than 200 words per visual).
 
-## **3. Installing and Loading the R Packages**
+## **2. Installing and Loading the R Packages**
 
-Below are the packages we will be using for this exercise.
+For this exercise, in the following code chunk, `p_load()` from **pacman** package is used to install and load the following R packages into the R environment:
+
+-   **sf** for importing, managing, and processing geospatial data,
+
+-   **sfdep to** compute spatial weights using appropriate functions
+
+-   **tmap** for creating thematic maps,
+
+-   **tidyverse** for performing data science tasks such as importing, wrangling and visualising data,
+
+-   **knitr** for creating html table.
 
 ```{r}
 pacman::p_load(sf, sfdep, tmap, tidyverse, knitr)
 ```
 
-## **4. Data**
+## **3. Data Preparation**
 
-### **4.1 Apastial data**
+### **3.1 Data**
 
-For the purpose of this take-home exercise, *Passenger Volume by Origin Destination Bus Stops* downloaded from [LTA DataMall](https://datamall.lta.gov.sg/content/datamall/en.html) will be used.
+There are 2 datasets used, as outlined in sections 3.1 and 3.2
 
-### **4.2 Geospatial data**
+#### **3.1.1 Apastial data**
+
+For the purpose of this take-home exercise, *Passenger Volume by Origin Destination Bus Stops* downloaded from [LTA DataMall](https://datamall.lta.gov.sg/content/datamall/en.html) will be used. Relevant data for the month of August, September and Oct 2023 had been downloaded. For this exercise, we will observe this dataset for the time period of Oct 2023. This can reproduced later on by point to the csv file for the required month.
+
+#### **3.1.2 Geospatial data**
 
 Two geospatial data will be used in this study, they are:
 
 -   *Bus Stop Location* from LTA DataMall. It provides information about all the bus stops currently being serviced by buses, including the bus stop code (identifier) and location coordinates.
 
--   *hexagon*, a [hexagon](https://desktop.arcgis.com/en/arcmap/latest/tools/spatial-statistics-toolbox/h-whyhexagons.htm) layer of 250m (this distance is the perpendicular distance between the centre of the hexagon and its edges.) should be used to replace the relative coarse and irregular Master Plan 2019 Planning Sub-zone GIS data set of URA.
+-   *hexagon*, a [hexagon](https://desktop.arcgis.com/en/arcmap/latest/tools/spatial-statistics-toolbox/h-whyhexagons.htm) layer of 250m (this distance is the perpendicular distance between the centre of the hexagon and its edges or in short "Apothem distance" ) should be created using Bus Stop Location and Passenger Volume by Origin Destination Bus Stops data.
 
-4.1 Importing the aspatial data
+### 3.2 Getting the Data Into R Environment
 
-We will import that *Passenger Volume By Origin Destination Bus Stops* data set downloaded from LTA Datamall by using read_csv() of readr package. For this exercise, we will observe this dataset for the time period of Oct 2023.
+#### 3.2.1 Importing the aspatial data
+
+We will import the *Passenger Volume By Origin Destination Bus Stops* data set for Oct 2023 downloaded from LTA Datamall by using read_csv().
 
 ```{r}
 odbus <- read_csv("data/aspatial/origin_destination_bus_202310.csv")
 ```
 
+Using glimpse(odbus), we can see that there are 5,694,297 rows of datapoints in this dataset.
+
+A quick check of odbus tibble data frame also shows that the values in ORIGIN_PT_CODE and DESTINATON_PT_CODE are already in \<char\> type. Hence, no adjustments needed to the data type.
+
 ```{r}
 glimpse(odbus)
 ```
+
+#### **3.2.2 Extracting the relevant study data from the aspatial data**
+
+For the purpose of this exercise, we will extract commuting flows based on the intervals denoted in section 1.1
+
+However, I realized that the weekday afternoon peak stats later than weekend/holiday evening peak.
+
+For purposes of consistency and comparison, I will rename peak hour period "Weekday afternoon peak" to "Weekday evening peak"
+
+| Peak hour period                           | Bus tap on time | Corresponding Table Name |
+|-----------------------------|------------------|-------------------------|
+| Weekday morning peak                       | 6am to 9am      | origin6_9                |
+| ~~Weekday afternoon~~ Weekday evening peak | 5pm to 8pm      | origin17_20              |
+| Weekend/holiday morning peak               | 11am to 2pm     | origin11_14              |
+| Weekend/holiday evening peak               | 4pm to 7pm      | origin16_19              |
+
+The following data wrangling and transformation functions will be used:
 
 ```{r}
 origin6_9 <- odbus %>%
@@ -84,9 +121,9 @@ origin6_9 <- odbus %>%
   group_by(ORIGIN_PT_CODE) %>%
   summarise(TRIPS = sum(TOTAL_TRIPS))
 
-origin5_8 <- odbus %>%
+origin17_20 <- odbus %>%
   filter (DAY_TYPE == "WEEKDAY") %>%
-  filter (TIME_PER_HOUR >= 5 & TIME_PER_HOUR <=8) %>%
+  filter (TIME_PER_HOUR >= 17 & TIME_PER_HOUR <=20) %>%
   group_by(ORIGIN_PT_CODE) %>%
   summarise(TRIPS = sum(TOTAL_TRIPS))
 
@@ -104,15 +141,195 @@ origin16_19 <- odbus %>%
 
 ```
 
-We will save the output in rds format for future used.
+We will save the output in rds format for future use.
 
 ```{r}
 write_rds(origin6_9, "data/rds/origin6_9.rds")
-write_rds(origin5_8, "data/rds/origin5_8.rds")
+write_rds(origin17_20, "data/rds/origin17_20.rds")
 write_rds(origin11_14, "data/rds/origin11_14.rds")
 write_rds(origin16_19, "data/rds/origin16_19.rds")
 
 ```
+
+A check on origin6_9 data table indicates the it is correctly mapped.
+
+```{r}
+origin6_9 <- read_rds("data/rds/origin6_9.rds")
+origin17_20 <- read_rds("data/rds/origin17_20.rds")
+origin11_14 <- read_rds("data/rds/origin11_14.rds")
+origin16_19 <- read_rds("data/rds/origin16_19.rds")
+```
+
+```{r}
+kable(head(origin6_9))
+```
+
+```{r}
+kable(head(origin17_20))
+```
+
+```{r}
+kable(head(origin11_14))
+```
+
+```{r}
+kable(head(origin16_19))
+```
+
+#### **3.2.3 Exploratory data analysis on data**
+
+##### **3.2.3.1 EDA on weekday morning peak data** 
+
+Exploratory Data Analysis indicates following observations:
+
+```{r}
+#Total trips during weekday morning peak for the month
+sum(origin6_9$TRIPS)
+```
+
+```{r}
+#Maximum trips during weekday morning peak for the month from 1 origin
+max(origin6_9$TRIPS)
+```
+
+Checks in data notes that the highest no. of bus trip originates from Boon Lay Interchange (Loc_DESC)
+
+```{r}
+#Minimum trips during weekday morning peak for the month from 1 origin
+min (origin6_9$TRIPS)
+```
+
+```{r}
+#Median no. of trips during weekday morning peak from 1 origin
+median(origin6_9$TRIPS)
+```
+
+```{r}
+#Distribution check
+hist(origin6_9$`TRIPS`)
+```
+
+Distribution is skewed heavily to the left.
+
+##### **3.2.3.2 EDA on weekday evening peak data** 
+
+Exploratory Data Analysis indicates following observations:
+
+```{r}
+#Total trips during weekday evening peak for the month
+sum(origin17_20$TRIPS)
+```
+
+```{r}
+#Maximum trips during weekday evening peak for the month from 1 origin
+max(origin17_20$TRIPS)
+```
+
+Checks in data notes that the highest no. of bus trip originates from Boon Lay Interchange (Loc_DESC)
+
+```{r}
+#Minimum trips during weekday evening peak for the month from 1 origin
+min (origin17_20$TRIPS)
+```
+
+```{r}
+#Median no. of trips during weekday evening peak from 1 origin
+median(origin17_20$TRIPS)
+```
+
+```{r}
+hist(origin17_20$`TRIPS`)
+```
+
+Distribution is skewed heavily to the left.
+
+##### **3.2.3.3 EDA on Weekend/holiday morning peak data** 
+
+Exploratory Data Analysis indicates following observations:
+
+```{r}
+#Total trips during Weekend/holiday morning peak for the month
+sum(origin11_14$TRIPS)
+```
+
+```{r}
+#Maximum trips during Weekend/holiday morning peak for the month from 1 origin
+max(origin11_14$TRIPS)
+```
+
+Checks in data notes that the highest no. of bus trip originates from Boon Lay Interchange (Loc_DESC)
+
+```{r}
+#Minimum trips during Weekend/holiday morning peak for the month from 1 origin
+min (origin11_14$TRIPS)
+```
+
+```{r}
+#Median no. of trips during Weekend/holiday morning peak from 1 origin
+median(origin11_14$TRIPS)
+```
+
+```{r}
+hist(origin11_14$`TRIPS`)
+```
+
+Distribution is skewed heavily to the left.
+
+##### **3.2.3.4 EDA on Weekend/holiday evening peak data** 
+
+Exploratory Data Analysis indicates following observations:
+
+```{r}
+#Total trips during Weekend/holiday evening peak for the month
+sum(origin16_19$TRIPS)
+```
+
+```{r}
+#Maximum trips during Weekend/holiday evening peak for the month from 1 origin
+max(origin16_19$TRIPS)
+```
+
+Checks in data notes that the highest no. of bus trip originates from Boon Lay Interchange (Loc_DESC)
+
+```{r}
+#Minimum trips during Weekend/holiday evening peak for the month from 1 origin
+min (origin16_19$TRIPS)
+```
+
+```{r}
+#Median no. of trips during Weekend/holiday evening peak from 1 origin
+median(origin16_19$TRIPS)
+```
+
+```{r}
+hist(origin16_19$`TRIPS`)
+```
+
+Distribution is skewed heavily to the left.
+
+##### **3.2.3.5 EDA comparison across the different peak periods** 
+
+Some observations noted for bus trips in Oct 2023:
+
+-   All distributions are heavily skewed to the left.
+
+-   Total bus trips for the month for both weekday peaks for both morning and afternoon are quite similar, 26,088,201 (morning) vs 25,151,947 (afternoon)
+
+-   Total bus trips for the month for both weekend/holiday peaks for both morning and evening are quite similar, 7,766,064 (morning) vs 7,797,319 (evening)
+
+-   Total bus trips during weekday peaks are circa 3 times more than bus trips during weekend/holiday peaks.
+
+-   From the available data, the highest number of trips (529,081) for the month from across all peak periods occurred during weekday evening peak, and it originated from Boon Lay Interchange.
+
+-   During all peak periods, the highest number of bus trips originates from Boon Lay Interchange. Based on public research, it is situated within Jurong Point Shopping Mall and integrated with the nearby Boon Lay MRT Station. This interchange also serves a variety of passengers, including those from Nanyang Technological University, Jurong Industrial Estate and Tuas Industrial Estate. It also has 27 bus services and it is among the largest and busiest bus interchange in Singapore with an affluence of more than 85,000 commuters every day. [\[1\]](https://idealconnection.com.sg/bus-interchange/boon-lay-bus-interchange/)
+
+#### **3.2.3 Importing the geospatial data**
+
+The code chunk below
+
+-   uses the *st_read()* function of **sf** package to import `Busstop` shapefile into R as a simple feature data frame called `busstop`
+
+-   Assigning EPSG code **3414** to busstop data frame.
 
 ```{r}
 busstop <- st_read(dsn = "data/geospatial", layer = "BusStop") %>%
@@ -121,65 +338,466 @@ busstop <- st_read(dsn = "data/geospatial", layer = "BusStop") %>%
 st_crs(busstop)
 ```
 
+Before moving to the next step, we save the output into rds format as a good practice.
+
 ```{r}
 write_rds(busstop, "data/rds/busstop.csv")  
 ```
 
-Using origin6_9 as test
+### **3.3 Geospatial data wrangling**
+
+#### **3.3.1 Data wrangling with first set of time interval data - Weekday morning peak**
+
+In this section, we are going to append the busstop data frame onto origin6_9 data frame first.
 
 ```{r}
-origin_data <- left_join(origin6_9 , busstop,
+origin_data6_9 <- left_join(origin6_9 , busstop,
             by = c("ORIGIN_PT_CODE" = "BUS_STOP_N")) %>%
   rename(ORIGIN_BS = ORIGIN_PT_CODE)
 ```
 
+We check for duplicating records
+
 ```{r}
-duplicate <- origin_data %>%
+duplicate6_9 <- origin_data6_9 %>%
   group_by_all() %>%
   filter(n()>1) %>%
   ungroup()
-
-origin_data <- unique(origin_data)
 ```
+
+We use the code chunk below to retain the unique records.
+
+```{r}
+origin_data6_9 <- unique(origin_data6_9)
+```
+
+Using head(), we noticed that the origin_data6_9 does not appear to be in simple feature form.
+
+```{r}
+head(origin_data6_9, n=5)
+```
+
+In the following section, we will create a Choropleth map with a hexagon layer. The code utilises a function called st_make_grid, whcih needs to recognize origin_data as a simple feature form with geospatial information in order to process it. Hence, in anticipation of that, we will convert the data into simple feature form using the below code chunk.
+
+```{r}
+origin_data6_9<- st_as_sf (origin_data6_9)
+```
+
+A check indicates it now to be in simple feature form
+
+```{r}
+head(origin_data6_9, n=5)
+```
+
+We now replicate the same data wrangling for the other 3 datatables: origin17_20, origin11_14 and origin16_19.
+
+#### **3.3.2 Data wrangling with second set of time interval data - weekday evening peak**
+
+3.3.1 For origin17_20:
+
+Append the busstop data frame onto origin17_20 data frame
+
+```{r}
+origin_data17_20 <- left_join(origin17_20 , busstop,
+            by = c("ORIGIN_PT_CODE" = "BUS_STOP_N")) %>%
+  rename(ORIGIN_BS = ORIGIN_PT_CODE)
+```
+
+We check for duplicating records
+
+```{r}
+duplicate17_20 <- origin_data17_20 %>%
+  group_by_all() %>%
+  filter(n()>1) %>%
+  ungroup()
+```
+
+We use the code chunk below to retain the unique records.
+
+```{r}
+origin_data17_20 <- unique(origin_data17_20)
+```
+
+Using head(), we noticed that the origin_data17_20 does not appear to be in simple feature form.
+
+```{r}
+head(origin_data17_20, n=5)
+```
+
+In the following section, we will create a Choropleth map with a hexagon layer. The code utilises a function called st_make_grid, whcih needs to recognize origin_data as a simple feature form with geospatial information in order to process it. Hence, in anticipation of that, we will convert the data into simple feature form using the below code chunk.
+
+```{r}
+origin_data17_20<- st_as_sf (origin_data17_20)
+```
+
+A check indicates it now to be in simple feature form
+
+```{r}
+head(origin_data17_20, n=5)
+```
+
+#### **3.3.3 Data wrangling with third set of time interval data - Weekend/holiday morning peak**
+
+3.3.1 For origin11_14:
+
+Append the busstop data frame onto origin11_14 data frame
+
+```{r}
+origin_data11_14 <- left_join(origin11_14 , busstop,
+            by = c("ORIGIN_PT_CODE" = "BUS_STOP_N")) %>%
+  rename(ORIGIN_BS = ORIGIN_PT_CODE)
+```
+
+We check for duplicating records
+
+```{r}
+duplicate11_14 <- origin_data11_14 %>%
+  group_by_all() %>%
+  filter(n()>1) %>%
+  ungroup()
+```
+
+We use the code chunk below to retain the unique records.
+
+```{r}
+origin_data11_14 <- unique(origin_data11_14)
+```
+
+Using head(), we noticed that the origin_data11_14 does not appear to be in simple feature form.
+
+```{r}
+head(origin_data11_14, n=5)
+```
+
+In the following section, we will create a Choropleth map with a hexagon layer. The code utilises a function called st_make_grid, whcih needs to recognize origin_data as a simple feature form with geospatial information in order to process it. Hence, in anticipation of that, we will convert the data into simple feature form using the below code chunk.
+
+```{r}
+origin_data11_14<- st_as_sf (origin_data11_14)
+```
+
+A check indicates it now to be in simple feature form
+
+```{r}
+head(origin_data11_14, n=5)
+```
+
+#### **3.3.4 Data wrangling with fourth set of time interval data - Weekend/holiday evening peak**
+
+3.3.1 For origin16_19:
+
+Append the busstop data frame onto origin16_19 data frame
+
+```{r}
+origin_data16_19 <- left_join(origin16_19 , busstop,
+            by = c("ORIGIN_PT_CODE" = "BUS_STOP_N")) %>%
+  rename(ORIGIN_BS = ORIGIN_PT_CODE)
+```
+
+We check for duplicating records
+
+```{r}
+duplicate16_19 <- origin_data16_19 %>%
+  group_by_all() %>%
+  filter(n()>1) %>%
+  ungroup()
+```
+
+We use the code chunk below to retain the unique records.
+
+```{r}
+origin_data16_19 <- unique(origin_data16_19)
+```
+
+Using head(), we noticed that the origin_data16_19 does not appear to be in simple feature form.
+
+```{r}
+head(origin_data16_19, n=5)
+```
+
+In the following section, we will create a Choropleth map with a hexagon layer. The code utilises a function called st_make_grid, whcih needs to recognize origin_data as a simple feature form with geospatial information in order to process it. Hence, in anticipation of that, we will convert the data into simple feature form using the below code chunk.
+
+```{r}
+origin_data16_19<- st_as_sf (origin_data16_19)
+```
+
+A check indicates it now to be in simple feature form
+
+```{r}
+head(origin_data16_19, n=5)
+```
+
+## **4. Choropleth Visualisation**
+
+### **4.1 Making the Grid**
+
+In this section, we will be creating hexagon grids to help in subsequent analysis.\
+The below code chunk shows the hexagon grid making for the first time interval using the data table origin_data6_9.
+
+#### **4.1.1 Making the Grid for Weekday morning peak data**
 
 ```{r}
 
-area_honeycomb_grid = st_make_grid(busstop, c(250, 250), what = "polygons", square = FALSE)
+# Apothem distance is distance from the centre of a regular polygon at right angles to any of its sides. As stated by the data requirement, we set the desired apothem distance at 250
+apothem_distance <- 250
+
+# Calculate the side length
+side_length <- (2 * apothem_distance) / sqrt(3)
+
+# Use the calculated side length in st_make_grid
+area_honeycomb_grid6_9 <- st_make_grid(origin_data6_9, cellsize = c(side_length, side_length), what = "polygons", square = FALSE)
 
 # To sf and add grid ID
-honeycomb_grid_sf = st_sf(area_honeycomb_grid) %>%
+honeycomb_grid_sf6_9 = st_sf(area_honeycomb_grid6_9) %>%
   # add grid ID
-  mutate(grid_id = 1:length(lengths(area_honeycomb_grid)))
+  mutate(grid_id = 1:length(lengths(area_honeycomb_grid6_9)))
 
-# count number of points in each grid
-# https://gis.stackexchange.com/questions/323698/counting-points-in-polygons-with-sf-package-of-r
-honeycomb_grid_sf$BUS_STOP_N = lengths(st_intersects(honeycomb_grid_sf, busstop))
+# Use st_intersection to get a new dataset with intersecting points
+intersections_data6_9 <- st_intersection(honeycomb_grid_sf6_9, origin_data6_9)
 
-# remove grid without value of 0 (i.e. no points in side that grid)
-honeycomb_count = filter(honeycomb_grid_sf, BUS_STOP_N > 0)
+# Aggregate to sum the "TRIPS" values for each grid
+sum_trips6_9 <- aggregate(intersections_data6_9$TRIPS, by = list(intersections_data6_9$grid_id), sum, na.rm = TRUE)
+
+# Merge the result back to the honeycomb grid
+colnames(sum_trips6_9) <- c("grid_id", "Sum_TRIPS")  
+honeycomb_grid_sf6_9 <- merge(honeycomb_grid_sf6_9, sum_trips6_9, by.x = "grid_id", by.y = "grid_id", all.x = TRUE)
+
+# remove grid with value of 0 
+honeycomb_count6_9 = filter(honeycomb_grid_sf6_9, Sum_TRIPS > 0)
 
 ```
+
+This is replicated for the remaining 3 time intervals.
+
+#### **4.1.2 Making the Grid for weekday evening peak data**
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code" 
+# Apothem distance is distance from the centre of a regular polygon at right angles to any of its sides. As stated by the data requirement, we set the desired apothem distance at 250
+apothem_distance <- 250
+
+# Calculate the side length
+side_length <- (2 * apothem_distance) / sqrt(3)
+
+# Use the calculated side length in st_make_grid
+area_honeycomb_grid17_20 <- st_make_grid(origin_data17_20, cellsize = c(side_length, side_length), what = "polygons", square = FALSE)
+
+# To sf and add grid ID
+honeycomb_grid_sf17_20 = st_sf(area_honeycomb_grid17_20) %>%
+  # add grid ID
+  mutate(grid_id = 1:length(lengths(area_honeycomb_grid17_20)))
+
+# Use st_intersection to get a new dataset with intersecting points
+intersections_data17_20 <- st_intersection(honeycomb_grid_sf17_20, origin_data17_20)
+
+# Aggregate to sum the "TRIPS" values for each grid
+sum_trips17_20 <- aggregate(intersections_data17_20$TRIPS, by = list(intersections_data17_20$grid_id), sum, na.rm = TRUE)
+
+# Merge the result back to the honeycomb grid
+colnames(sum_trips17_20) <- c("grid_id", "Sum_TRIPS")  
+honeycomb_grid_sf17_20 <- merge(honeycomb_grid_sf17_20, sum_trips17_20, by.x = "grid_id", by.y = "grid_id", all.x = TRUE)
+
+# remove grid with value of 0 
+honeycomb_count17_20 = filter(honeycomb_grid_sf17_20, Sum_TRIPS > 0)
+
+```
+
+#### **4.1.3 Making the Grid for Weekend/holiday morning peak data**
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code" 
+# Apothem distance is distance from the centre of a regular polygon at right angles to any of its sides. As stated by the data requirement, we set the desired apothem distance at 250
+apothem_distance <- 250
+
+# Calculate the side length
+side_length <- (2 * apothem_distance) / sqrt(3)
+
+# Use the calculated side length in st_make_grid
+area_honeycomb_grid11_14 <- st_make_grid(origin_data11_14, cellsize = c(side_length, side_length), what = "polygons", square = FALSE)
+
+# To sf and add grid ID
+honeycomb_grid_sf11_14 = st_sf(area_honeycomb_grid11_14) %>%
+  # add grid ID
+  mutate(grid_id = 1:length(lengths(area_honeycomb_grid11_14)))
+
+# Use st_intersection to get a new dataset with intersecting points
+intersections_data11_14 <- st_intersection(honeycomb_grid_sf11_14, origin_data11_14)
+
+# Aggregate to sum the "TRIPS" values for each grid
+sum_trips11_14 <- aggregate(intersections_data11_14$TRIPS, by = list(intersections_data11_14$grid_id), sum, na.rm = TRUE)
+
+# Merge the result back to the honeycomb grid
+colnames(sum_trips11_14) <- c("grid_id", "Sum_TRIPS")  
+honeycomb_grid_sf11_14 <- merge(honeycomb_grid_sf11_14, sum_trips11_14, by.x = "grid_id", by.y = "grid_id", all.x = TRUE)
+
+# remove grid with value of 0 
+honeycomb_count11_14 = filter(honeycomb_grid_sf11_14, Sum_TRIPS > 0)
+
+```
+
+#### **4.1.4 Making the Grid for Weekend/holiday evening peak data**
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code" 
+# Apothem distance is distance from the centre of a regular polygon at right angles to any of its sides. As stated by the data requirement, we set the desired apothem distance at 250
+apothem_distance <- 250
+
+# Calculate the side length
+side_length <- (2 * apothem_distance) / sqrt(3)
+
+# Use the calculated side length in st_make_grid
+area_honeycomb_grid16_19 <- st_make_grid(origin_data16_19, cellsize = c(side_length, side_length), what = "polygons", square = FALSE)
+
+# To sf and add grid ID
+honeycomb_grid_sf16_19 = st_sf(area_honeycomb_grid16_19) %>%
+  # add grid ID
+  mutate(grid_id = 1:length(lengths(area_honeycomb_grid16_19)))
+
+# Use st_intersection to get a new dataset with intersecting points
+intersections_data16_19 <- st_intersection(honeycomb_grid_sf16_19, origin_data16_19)
+
+# Aggregate to sum the "TRIPS" values for each grid
+sum_trips16_19 <- aggregate(intersections_data16_19$TRIPS, by = list(intersections_data16_19$grid_id), sum, na.rm = TRUE)
+
+# Merge the result back to the honeycomb grid
+colnames(sum_trips16_19) <- c("grid_id", "Sum_TRIPS")  
+honeycomb_grid_sf16_19 <- merge(honeycomb_grid_sf16_19, sum_trips16_19, by.x = "grid_id", by.y = "grid_id", all.x = TRUE)
+
+# remove grid with value of 0 
+honeycomb_count16_19 = filter(honeycomb_grid_sf16_19, Sum_TRIPS > 0)
+
+```
+
+### **4.2 Geovisualisation and analysis of passenger trips during weekday morning peak**
+
+The below code chunk creates the Choropleth map using tmap and the hexagon overlay.
 
 ```{r}
 tmap_mode("view")
 
-map_honeycomb = tm_shape(honeycomb_count) +
+map_honeycomb6_9 = tm_shape(honeycomb_count6_9) +
   tm_fill(
-    col = "BUS_STOP_N",
+    col = "Sum_TRIPS",
     palette = "Reds",
-    style = "cont",
-    title = "Number of bus stops",
+    style = "jenks",
+    title = "Bus trips during weekday morning peak",
     id = "grid_id",
     showNA = FALSE,
     alpha = 0.6,
-    popup.vars = c(
-      "Number of bus stops: " = "BUS_STOP_N"
+        popup.vars = c(
+      "No. of bus trips: " = "Sum_TRIPS"
     ),
     popup.format = list(
-      BUS_STOP_N = list(format = "f", digits = 0)
+      Sum_TRIPS = list(format = "f", digits = 0)
     )
   ) +
   tm_borders(col = "grey40", lwd = 0.7)
 
-map_honeycomb
+map_honeycomb6_9
 ```
+
+Geospatial visualization reveals distinctive patterns during weekday morning peaks (6am to 9pm), with a notable surge in the origination of bus trips emanating from residential heartlands like Tampines, Boon Lay, and SengKang. In contrast, fewer bus journeys commence from the bustling city center and industrial zones, where commercial and industrial spaces predominate over residential areas. This phenomenon aligns with the typical morning routine, wherein commuters embark on buses from their homes to workplaces during weekday peak hours.
+
+Upon closer scrutiny, specific zones exhibit exceptionally high trip counts, particularly in proximity to key transit hubs such as Boon Lay Interchange, Woodlands MRT station, the Woodlands checkpoint, and major MRT-bus interchanges. These locations witness a heightened concentration of passengers, suggesting a correlation with areas where individuals assemble to transfer buses for diverse destinations.
+
+While preliminary observations hint at a potential correlation between higher trip numbers and residential heartland areas characterized by numerous HDBs and condominiums, definitive conclusions await the overlay of demographic data. Further analysis incorporating demographic information is essential to validate whether these patterns correlate with income levels or specific residential types, providing a more comprehensive understanding of the dynamics influencing public transit usage in these regions.
+
+### **4.2 Geovisualisation and analysis of passenger trips during weekday evening peak**
+
+The below code chunk creates the Choropleth map using tmap and the hexagon overlay.
+```{r}
+
+tmap_mode("view")
+
+map_honeycomb17_20 = tm_shape(honeycomb_count17_20) +
+  tm_fill(
+    col = "Sum_TRIPS",
+    palette = "Reds",
+    style = "jenks",
+    title = "Bus trips during weekday evening peak",
+    id = "grid_id",
+    showNA = FALSE,
+    alpha = 0.6,
+        popup.vars = c(
+      "No. of bus trips: " = "Sum_TRIPS"
+    ),
+    popup.format = list(
+      Sum_TRIPS = list(format = "f", digits = 0)
+    )
+  ) +
+  tm_borders(col = "grey40", lwd = 0.7)
+
+map_honeycomb17_20
+```
+
+Geospatial visualization exposes a distinctive transit pattern during the weekday evening peak (5 pm to 8 pm), emphasizing the sustained importance of major transit hubs like Boon Lay Interchange and Woodlands MRT station. In the city center, a noticeable increase in bus trips is observed compared to the morning peak, with heightened colors indicating greater activity. 
+
+Conversely, residential heartlands experience a decline in originating bus trips during the evening peak, aligning with the post-office hours when commuters return home. Noteworthy exceptions include certain transit hubs, such as Boon Lay Interchange, witnessing a substantial 50% surge compared to the morning. This prompts a vital consideration: assessing whether an increased bus departure frequency is necessary from these hubs to meet the escalated demand during the weekday evening peak. Such analysis is crucial for optimizing transportation services and addressing heightened demand during specific time periods.
+
+### **4.3 Geovisualisation and analysis of passenger trips during Weekend/holiday morning peak**
+
+The below code chunk creates the Choropleth map using tmap and the hexagon overlay.
+```{r}
+
+tmap_mode("view")
+
+map_honeycomb11_14 = tm_shape(honeycomb_count11_14) +
+  tm_fill(
+    col = "Sum_TRIPS",
+    palette = "Blues",
+    style = "jenks",
+    title = "Bus trips during Weekend/holiday morning peak",
+    id = "grid_id",
+    showNA = FALSE,
+    alpha = 0.6,
+        popup.vars = c(
+      "No. of bus trips: " = "Sum_TRIPS"
+    ),
+    popup.format = list(
+      Sum_TRIPS = list(format = "f", digits = 0)
+    )
+  ) +
+  tm_borders(col = "grey40", lwd = 0.7)
+
+map_honeycomb11_14
+```
+
+Geospatial visualization reveals a consistent trend during weekend and holiday morning peaks (11 am to 2 pm), with a notable increase in bus trips originating from transit hubs. However, a distinctive difference is observed in the shades of blue at residential hubs, appearing visibly lighter compared to weekday morning peaks. The overall count of bus trips per zone has significantly decreased in comparison to weekday mornings. The cause of this decline remains uncertain—it could be attributed to a general reduction in weekend travel or a more evenly distributed ridership throughout the day, given the absence of the typical workday morning rush.
+
+The ambiguity arises as weekends often entail fewer people commuting during the morning, possibly due to non-working or half-working days. A comprehensive investigation beyond the peak period is warranted to ascertain whether this decline represents an overall reduction in bus rides across various zones. Delving further into weekend time periods would provide valuable insights into travel patterns and help determine the factors contributing to the observed changes in bus trip frequencies
+
+### **4.4 Geovisualisation and analysis of passenger trips during Weekend/holiday evening peak**
+
+The below code chunk creates the Choropleth map using tmap and the hexagon overlay.
+```{r}
+
+tmap_mode("view")
+
+map_honeycomb16_19 = tm_shape(honeycomb_count16_19) +
+  tm_fill(
+    col = "Sum_TRIPS",
+    palette = "Blues",
+    style = "jenks",
+    title = "Bus trips during Weekend/holiday evening peak",
+    id = "grid_id",
+    showNA = FALSE,
+    alpha = 0.6,
+        popup.vars = c(
+      "No. of bus trips: " = "Sum_TRIPS"
+    ),
+    popup.format = list(
+      Sum_TRIPS = list(format = "f", digits = 0)
+    )
+  ) +
+  tm_borders(col = "grey40", lwd = 0.7)
+
+map_honeycomb16_19
+```
+
+Geospatial visualization illustrates a consistent trend during weekend and holiday evening peaks (4 pm to 7 pm), with an increased number of trips originating from transit hubs. However, a discernible decline in overall bus trips per zone, compared to weekday evenings, raises questions about the reasons behind this reduction. It remains unclear whether this decline is due to fewer people traveling on weekends or if there's a more evenly distributed ridership throughout the day.To comprehensively understand these dynamics, additional research beyond peak hours during weekends is warranted.
+
+Notably, during this period, heightened activity is observed in zones near Orchard Road and Somerset Road, indicating an increased number of trips, possibly from entertainment and shopping districts. This aligns with the expectation that people, having spent their weekends or holidays in these areas, are heading home during the evening peak. Consequently, bus operators can consider adjusting frequencies to accommodate the higher demand in these entertainment and shopping districts during weekend and holiday evenings.
+
+

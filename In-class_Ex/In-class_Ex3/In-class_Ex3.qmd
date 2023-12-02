@@ -541,8 +541,9 @@ Firstly we will extract the fitted values from each model by using the code chun
 df <- as.data.frame(uncSIM$fitted.values) %>%
   round(digits = 0)
 ```
-  
+
 Next, we will join the values to SIM_data data frame.
+
 ```{r}
 SIM_data <- SIM_data %>%
   cbind(df) %>%
@@ -550,10 +551,12 @@ SIM_data <- SIM_data %>%
 ```
 
 Repeat the same step by for Origin Constrained SIM (i.e. orcSIM)
+
 ```{r}
 df <- as.data.frame(orcSIM$fitted.values) %>%
   round(digits = 0)
 ```
+
 ```{r}
 SIM_data <- SIM_data %>%
   cbind(df) %>%
@@ -566,11 +569,13 @@ Repeat the same step by for Destination Constrained SIM (i.e. decSIM)
 df <- as.data.frame(decSIM$fitted.values) %>%
   round(digits = 0)
 ```
+
 ```{r}
 SIM_data <- SIM_data %>%
   cbind(df) %>%
   rename(decTRIPS = "decSIM$fitted.values")
 ```
+
 Repeat the same step by for Doubly Constrained SIM (i.e. dbcSIM)
 
 ```{r}
@@ -613,5 +618,3 @@ ggarrange(unc_p, orc_p, dec_p, dbc_p,
           ncol = 2,
           nrow = 2)
 ```
-
-

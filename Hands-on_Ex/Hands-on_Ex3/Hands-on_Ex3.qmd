@@ -126,6 +126,8 @@ mpsz <- st_read(dsn = "data/geospatial",
   st_transform(crs = 3414)
 
 mpsz
+
+write_rds(mpsz, "data/rds/mpsz.rds")
 ```
 
 **\
