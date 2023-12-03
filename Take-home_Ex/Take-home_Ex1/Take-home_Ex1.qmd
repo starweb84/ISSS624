@@ -67,7 +67,7 @@ For this exercise, in the following code chunk, `p_load()` from **pacman** p
 
 -   **sf** for importing, managing, and processing geospatial data,
 
--   **sfdep to** compute spatial weights using appropriate functions
+-   **sfdep/spdep ** to compute spatial weights using appropriate functions
 
 -   **tmap** for creating thematic maps,
 
@@ -76,7 +76,7 @@ For this exercise, in the following code chunk, `p_load()` from **pacman** p
 -   **knitr** for creating html table.
 
 ```{r}
-pacman::p_load(sf, sfdep, tmap, tidyverse, knitr)
+pacman::p_load(sf, sfdep, spdep, tmap, tidyverse, knitr)
 ```
 
 ## **3. Data Preparation**
@@ -825,256 +825,443 @@ Notably, during this period, heightened activity is observed in zones near Orcha
 
 ## **5. Global and Local Measures of Spatial Association**
 
-### **5.1 Computing distance weights**
+### **5.1 Assigning spatial weights, and analyzing Global Spatial Autocorrelation with Moran's I Test and Moran's I Permutation Test**
 
-For the subsequent sections, we will be trying to address Objective 2 as detailed in section 1.1.
+Firstly, we identify the spatial weights which is used to define the neighbourhood relationship between the geographical units.There are 2 main approaches to compute the spatial weights, namely, the contiguity approach and the distance approach. For this exercise, based on the observation of the geovisualization, we note that there are hexagons with no neighbors. Hence, we will use adaptive distance approach where shorter bandwidths (or distances) are used.
 
-The below codechunk is used to compute distance weights for weekday morning peak
+In the following code chunk, we use map_dbl() to transform the geometry of each hexagon by applying the function st_centroid() to each hexagon. We then access the longitude using \[\[1\]\]. Likewise, we perform the following to access the latitude of the hexagon, this time using \[\[2\]\] to access the latitude. Once we have latitude and longitude, we use cbind to put longitude and latitude into the same object.
+
+We check the first few observations to see if things are formatted correctly.
 
 ```{r}
-wm_idw6_9 <- honeycomb_count6_9 %>%
-  mutate(nb = st_contiguity(geometry),
-         wts = st_inverse_distance(nb, geometry,
-                                   scale = 1,
-                                   alpha = 1),
-         .before = 1)
+longitude6_9 <- map_dbl(honeycomb_count6_9$geometry, ~st_centroid(.x)[[1]])
+latitude6_9 <- map_dbl(honeycomb_count6_9$geometry, ~st_centroid(.x)[[2]])
+coords6_9 <- cbind(longitude6_9, latitude6_9)
 
-wm_idw6_9
+head(coords6_9)
 ```
 
-We duplicate the same for the other 3 peak intervals.
+```{r}
+knn86_9 <- knn2nb(knearneigh(coords6_9, k = 8))
+knn86_9
+```
+
+Next, we will assign weights to each neighboring polygon by using binary assignment. This is achieved in the following code chunk
+
+```{r}
+wm6_9 <- nb2listw(knn86_9,
+                style = "B",
+                zero.policy = TRUE)
+```
+
+```{r}
+moran.test(honeycomb_count6_9$Sum_TRIPS, 
+           listw = wm6_9, 
+           zero.policy = TRUE, 
+           na.action = na.omit)
+
+```
+
+Since p-value is very small, \< 0.05 (statistically significant) and the Moran I statistic (1.265984e-01) is positive, we reject the null hypothesis and conclude the no, of bus trips during the weekday morning peak period is spatially clustered.
+
+```{r}
+set.seed(1234)
+bperm = moran.mc(honeycomb_count6_9$Sum_TRIPS, 
+                listw = wm6_9, 
+                nsim = 999, 
+                zero.policy = TRUE, 
+                na.action = na.omit)
+bperm
+
+```
+
+The Monte Carlo simulation generates a very small p-value, i.e. \< 0.05 (thus statistically significant). Again, we can reject the null hypothesis and conclude that overall, the no, of bus trips during the weekday morning peak period is spatially clustered.
+
+We repeat the above for the other 3 intervals.
+
+For Weekday afternoon peak:
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code" 
+longitude17_20 <- map_dbl(honeycomb_count17_20$geometry, ~st_centroid(.x)[[1]])
+latitude17_20 <- map_dbl(honeycomb_count17_20$geometry, ~st_centroid(.x)[[2]])
+coords17_20 <- cbind(longitude17_20, latitude17_20)
+
+head(coords17_20)
+
+knn817_20 <- knn2nb(knearneigh(coords17_20, k = 8))
+knn817_20
+
+wm17_20 <- nb2listw(knn817_20,
+                style = "B",
+                zero.policy = TRUE)
+
+moran.test(honeycomb_count17_20$Sum_TRIPS, 
+           listw = wm17_20, 
+           zero.policy = TRUE, 
+           na.action = na.omit)
+
+set.seed(1234)
+bperm = moran.mc(honeycomb_count17_20$Sum_TRIPS, 
+                listw = wm17_20, 
+                nsim = 999, 
+                zero.policy = TRUE, 
+                na.action = na.omit)
+bperm
+
+```
+
+From the Moran I test, Since p-value is very small, \< 0.05 (statistically significant) and the Moran I statistic (5.328283e-02) is positive, we reject the null hypothesis and conclude the no, of bus trips during the weekday evening peak period is spatially clustered The Monte Carlo simulation generates a very small p-value, i.e. \< 0.05 (thus statistically significant). Again, we can reject the null hypothesis and conclude that overall, the no, of bus trips during the weekday evening peak period is spatially clustered.
+
+For Weekend/holiday morning peak:
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code" 
+longitude11_14 <- map_dbl(honeycomb_count11_14$geometry, ~st_centroid(.x)[[1]])
+latitude11_14 <- map_dbl(honeycomb_count11_14$geometry, ~st_centroid(.x)[[2]])
+coords11_14 <- cbind(longitude11_14, latitude11_14)
+
+head(coords11_14)
+
+knn811_14 <- knn2nb(knearneigh(coords11_14, k = 8))
+knn811_14
+
+wm11_14 <- nb2listw(knn811_14,
+                style = "B",
+                zero.policy = TRUE)
+
+moran.test(honeycomb_count11_14$Sum_TRIPS, 
+           listw = wm11_14, 
+           zero.policy = TRUE, 
+           na.action = na.omit)
+
+set.seed(1234)
+bperm = moran.mc(honeycomb_count11_14$Sum_TRIPS, 
+                listw = wm11_14, 
+                nsim = 999, 
+                zero.policy = TRUE, 
+                na.action = na.omit)
+bperm
+
+```
+
+From the Moran I test, Since p-value is very small, \< 0.05 (statistically significant) and the Moran I statistic (1.079164e-01) is positive, we reject the null hypothesis and conclude the no, of bus trips during the weekday evening peak period is spatially clustered The Monte Carlo simulation generates a very small p-value, i.e. \< 0.05 (thus statistically significant). Again, we can reject the null hypothesis and conclude that overall, the no, of bus trips during the weekday evening peak period is spatially clustered.
+
+For Weekend/holiday evening peak:
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code" 
+longitude16_19 <- map_dbl(honeycomb_count16_19$geometry, ~st_centroid(.x)[[1]])
+latitude16_19 <- map_dbl(honeycomb_count16_19$geometry, ~st_centroid(.x)[[2]])
+coords16_19 <- cbind(longitude16_19, latitude16_19)
+
+head(coords16_19)
+
+knn816_19 <- knn2nb(knearneigh(coords16_19, k = 8))
+knn816_19
+
+wm16_19 <- nb2listw(knn816_19,
+                style = "B",
+                zero.policy = TRUE)
+
+moran.test(honeycomb_count16_19$Sum_TRIPS, 
+           listw = wm16_19, 
+           zero.policy = TRUE, 
+           na.action = na.omit)
+
+set.seed(1234)
+bperm = moran.mc(honeycomb_count16_19$Sum_TRIPS, 
+                listw = wm16_19, 
+                nsim = 999, 
+                zero.policy = TRUE, 
+                na.action = na.omit)
+bperm
+
+```
+
+From the Moran I test, Since p-value is very small, \< 0.05 (statistically significant) and the Moran I statistic (1.079164e-01) is positive, we reject the null hypothesis and conclude the no, of bus trips during the weekday evening peak period is spatially clustered The Monte Carlo simulation generates a very small p-value, i.e. \< 0.05 (thus statistically significant). Again, we can reject the null hypothesis and conclude that overall, the no, of bus trips during the weekday evening peak period is spatially clustered.
+
+### **5.2 Objective 2: Local Spatial Autocorrelation - computing LISA**
+
+In contrast to global spatial autocorrelation, which indicates whether a variable tends to cluster across the entire map, the global statistic doesn't specify where these clusters occur. Local spatial autocorrelation, however, not only identifies the presence of clusters but also pinpoints their specific locations, along with spatial outliers.
+
+The code chunks below are used to compute local Moran's I/ LISA statistics
+
+For weekday morning peak
+```{r}
+fips6_9 <- order(honeycomb_count6_9$grid_id)
+localMI6_9 <- localmoran(honeycomb_count6_9$Sum_TRIPS, wm6_9)
+head(localMI6_9)
+```
+
+The results can be interpreted as follows:
+
+-   Ii: the local Moran's I statistics
+
+-   E.Ii: the expectation of local Moran's I statistic under the random distribution hypothesis
+
+-   Var.li: the variance of local Moran's I statistic under the random distribution hypothesis
+
+-   Z.li: the standard deviation of local Moran's I statistic
+
+-   Pr(z != E(Ii)): the p-value of local Moran's I statistic
+
+The code chunk below lists the content of the local Moran matrix derived
+
+```{r}
+printCoefmat(data.frame(
+    localMI6_9[fips6_9,],
+    row.names=honeycomb_count6_9$grid_id[fips6_9])
+)
+```
+
+We will append the local Moran's I dataframe (i.e. localMI) onto the honeycomb_count6_9 dataframe using the following code chunk.
+
+```{r}
+honeycomb_count6_9.localMI <- cbind(honeycomb_count6_9, localMI6_9)%>%
+  rename(Pr.Ii = Pr.z....E.Ii..)
+```
+
+We repeat the same for the other intervals
 
 For weekday evening peak:
 
 ```{r}
 #| code-fold: true
 #| code-summary: "Show the code" 
-wm_idw17_20 <- honeycomb_count17_20 %>%
-  mutate(nb = st_contiguity(geometry),
-         wts = st_inverse_distance(nb, geometry,
-                                   scale = 1,
-                                   alpha = 1),
-         .before = 1)
 
-wm_idw17_20
+fips17_20 <- order(honeycomb_count17_20$grid_id)
+localMI17_20 <- localmoran(honeycomb_count17_20$Sum_TRIPS, wm17_20 )
+head(localMI17_20)
+
+printCoefmat(data.frame(
+    localMI17_20[fips17_20,],
+    row.names=honeycomb_count17_20$grid_id[fips17_20])
+)
+
+honeycomb_count17_20.localMI <- cbind(honeycomb_count17_20, localMI17_20)%>%
+  rename(Pr.Ii = Pr.z....E.Ii..)
 ```
 
 For weekend/holidays morning peak:
-
 ```{r}
 #| code-fold: true
 #| code-summary: "Show the code" 
-wm_idw11_14 <- honeycomb_count11_14 %>%
-  mutate(nb = st_contiguity(geometry),
-         wts = st_inverse_distance(nb, geometry,
-                                   scale = 1,
-                                   alpha = 1),
-         .before = 1)
 
-wm_idw11_14
+fips11_14 <- order(honeycomb_count11_14$grid_id)
+localMI11_14 <- localmoran(honeycomb_count11_14$Sum_TRIPS, wm11_14)
+head(localMI11_14)
+
+printCoefmat(data.frame(
+    localMI11_14[fips11_14,],
+    row.names=honeycomb_count11_14$grid_id[fips11_14])
+)
+
+honeycomb_count11_14.localMI <- cbind(honeycomb_count11_14, localMI11_14)%>%
+  rename(Pr.Ii = Pr.z....E.Ii..)
 ```
 
 For weekend/holidays evening peak:
-
 ```{r}
 #| code-fold: true
 #| code-summary: "Show the code" 
-wm_idw16_19 <- honeycomb_count16_19 %>%
-  mutate(nb = st_contiguity(geometry),
-         wts = st_inverse_distance(nb, geometry,
-                                   scale = 1,
-                                   alpha = 1),
-         .before = 1)
 
-wm_idw16_19
+fips16_19 <- order(honeycomb_count16_19$grid_id)
+localMI16_19 <- localmoran(honeycomb_count16_19$Sum_TRIPS, wm16_19)
+head(localMI16_19)
+
+printCoefmat(data.frame(
+    localMI16_19[fips16_19,],
+    row.names=honeycomb_count16_19$grid_id[fips16_19])
+)
+
+honeycomb_count16_19.localMI <- cbind(honeycomb_count16_19, localMI16_19)%>%
+  rename(Pr.Ii = Pr.z....E.Ii..)
 ```
 
-Summary of the results notes that there are neighbors with no link for all peak intervals.
+### **5.3 Creating a LISA Cluster Map**
 
-For weekday morning peak:
+The following outlines the steps to prepare a LISA cluster map.
+
+We will first derive the spatially lagged variable of interest and center the spatially lagged variable around its mean.
 
 ```{r}
-summary(wm_idw6_9$nb)
+honeycomb_count6_9$lag_pct_nf <- lag.listw(wm6_9, honeycomb_count6_9$Sum_TRIPS)
+DV6_9 <- honeycomb_count6_9$lag_pct_nf - mean(honeycomb_count6_9$lag_pct_nf)
 ```
 
-For weekday evening peak:
+In the code chunk below, we 1) set a statistical significance level for the local Moran, 2) define the low-low (1), low-high (2), high-low (3) and high-high (4) categories and 3) create an additional category for LGAs with no statistically significant autocorrelation
 
 ```{r}
-summary(wm_idw17_20$nb)
+LM_I6_9 <- localMI6_9[,1] - mean(localMI6_9[,1])
+signif <- 0.05 
+Sum_TRIPS6_9 <- vector(mode="numeric",length=nrow(localMI6_9))
+Sum_TRIPS6_9[DV6_9 <0 & LM_I6_9>0] <- 1
+Sum_TRIPS6_9[DV6_9 >0 & LM_I6_9<0] <- 2
+Sum_TRIPS6_9[DV6_9 <0 & LM_I6_9<0] <- 3  
+Sum_TRIPS6_9[DV6_9 >0 & LM_I6_9>0] <- 4 
+Sum_TRIPS6_9[localMI6_9[,5]>signif] <- 0
 ```
 
-For weekend/holidays morning peak:
-
-```{r}
-summary(wm_idw11_14$nb)
-```
-
-For weekend/holidays evening peak:
-
-```{r}
-summary(wm_idw16_19$nb)
-```
-
-### **5.2 Objective 2: Computing and Visualising LISA/HSCA**
-
-#### **5.2.1 Computing LISA**
-
-An error was encountered when trying to compute LISA given the available data.
-
-LISA6_9 \<- wm_idw6_9 %\>% mutate(local_moran = local_moran( Sum_TRIPS, nb, wts, nsim = 99)cut) .before = 1) %\>% unnest(local_moran)
-
-LISA6_9 \####
-
-Error in `stopifnot()`: ℹ In argument: `local_moran = local_moran(Sum_TRIPS, nb, wts, nsim = 99)`. Caused by error in `cut.default()`: ! number of intervals and length of 'labels' differ Backtrace: 1. ... %\>% unnest(local_moran) 14. sfdep::local_moran(Sum_TRIPS, nb, wts, nsim = 99) 15. spdep::localmoran_perm(...) 18. base::cut.default(lx, c(-Inf, lxx, Inf), labels = lbs) 19. base::stop("number of intervals and length of 'labels' differ") Error in stopifnot(!inherits(x, "sf"), !missing(sf_column_name), !missing(agr)) :
-
-Caused by error in `cut.default()`: ! number of intervals and length of 'labels' differ
-
-As I was not able to proceed on using local_moran() to compute LISA, I have switched over to using HSCA as a means to analyse local patterns of spatial clustering or dispersion in a dataset. Instead of analyszing using categories typically used in LISA maps, which are:
-
--   High-High (HH): High values surrounded by high values.
-
--   Low-Low (LL): Low values surrounded by low values.
-
--   High-Low (HL): High values surrounded by low values.
-
--   Low-High (LH): Low values surrounded by high values.
-
-We would now use values of Gi\* to determine the intensity of the clustering.
-
-#### **5.3.2 Computing HSCA**
-
-The local GI\* statistics is computed using the code chunk below for weekday morning peak.
-
-```{r}
-HSCA6_9 <- wm_idw6_9 %>% 
-  mutate(local_Gi = local_gstar_perm(
-    Sum_TRIPS, nb, wts, nsim = 99),
-         .before = 1) %>%
-  unnest(local_Gi)
-HSCA6_9
-```
-
-We duplicate the same for the other 3 peak intervals.
+Repeat the same for the other intervals
 
 For weekday evening peak:
 
 ```{r}
 #| code-fold: true
-#| code-summary: "Show the code" 
-HSCA17_20 <- wm_idw17_20 %>% 
-  mutate(local_Gi = local_gstar_perm(
-    Sum_TRIPS, nb, wts, nsim = 99),
-         .before = 1) %>%
-  unnest(local_Gi)
-HSCA17_20
+#| code-summary: "Show the code"
+honeycomb_count17_20$lag_pct_nf <- lag.listw(wm17_20, honeycomb_count17_20$Sum_TRIPS)
+DV17_20 <- honeycomb_count17_20$lag_pct_nf - mean(honeycomb_count17_20$lag_pct_nf)
+
+LM_I17_20 <- localMI17_20[,1] - mean(localMI17_20[,1])
+signif <- 0.05 
+Sum_TRIPS17_20 <- vector(mode="numeric",length=nrow(localMI17_20))
+Sum_TRIPS17_20[DV17_20 <0 & LM_I17_20>0] <- 1
+Sum_TRIPS17_20[DV17_20>0 & LM_I17_20<0] <- 2
+Sum_TRIPS17_20[DV17_20 <0 & LM_I17_20<0] <- 3  
+Sum_TRIPS17_20[DV17_20 >0 & LM_I17_20>0] <- 4 
+Sum_TRIPS17_20[localMI17_20[,5]>signif] <- 0
 ```
 
 For weekend/holidays morning peak:
-
 ```{r}
 #| code-fold: true
-#| code-summary: "Show the code" 
-HSCA11_14 <- wm_idw11_14 %>% 
-  mutate(local_Gi = local_gstar_perm(
-    Sum_TRIPS, nb, wts, nsim = 99),
-         .before = 1) %>%
-  unnest(local_Gi)
-HSCA11_14
+#| code-summary: "Show the code"
+honeycomb_count11_14$lag_pct_nf <- lag.listw(wm11_14, honeycomb_count11_14$Sum_TRIPS)
+DV11_14 <- honeycomb_count11_14$lag_pct_nf - mean(honeycomb_count11_14$lag_pct_nf)
+
+LM_I11_14 <- localMI11_14[,1] - mean(localMI11_14[,1])
+signif <- 0.05 
+Sum_TRIPS11_14 <- vector(mode="numeric",length=nrow(localMI11_14))
+Sum_TRIPS11_14[DV11_14 <0 & LM_I11_14>0] <- 1
+Sum_TRIPS11_14[DV11_14 >0 & LM_I11_14<0] <- 2
+Sum_TRIPS11_14[DV11_14 <0 & LM_I11_14<0] <- 3  
+Sum_TRIPS11_14[DV11_14 >0 & LM_I11_14>0] <- 4 
+Sum_TRIPS11_14[localMI11_14[,5]>signif] <- 0
 ```
 
 For weekend/holidays evening peak:
 
 ```{r}
 #| code-fold: true
-#| code-summary: "Show the code" 
-HSCA16_19 <- wm_idw16_19 %>% 
-  mutate(local_Gi = local_gstar_perm(
-    Sum_TRIPS, nb, wts, nsim = 99),
-         .before = 1) %>%
-  unnest(local_Gi)
-HSCA16_19
+#| code-summary: "Show the code"
+honeycomb_count16_19$lag_pct_nf <- lag.listw(wm16_19, honeycomb_count16_19$Sum_TRIPS)
+DV16_19 <- honeycomb_count16_19$lag_pct_nf - mean(honeycomb_count16_19$lag_pct_nf)
+
+LM_I16_19 <- localMI16_19[,1] - mean(localMI16_19[,1])
+signif <- 0.05 
+Sum_TRIPS16_19 <- vector(mode="numeric",length=nrow(localMI16_19))
+Sum_TRIPS16_19[DV16_19 <0 & LM_I16_19>0] <- 1
+Sum_TRIPS16_19[DV16_19 >0 & LM_I16_19<0] <- 2
+Sum_TRIPS16_19[DV16_19 <0 & LM_I16_19<0] <- 3  
+Sum_TRIPS16_19[DV16_19 >0 & LM_I16_19>0] <- 4 
+Sum_TRIPS16_19[localMI16_19[,5]>signif] <- 0
 ```
 
-#### **5.2.3 Visualising HSCA**
 
-Using the HSCA statistics, we will display the HSCA maps of the passengers trips generate by origin at hexagon level for each peak interval. These maps only display the staistically significant zones (i.e. p-value \< 0.05)
+#### **5.3.1 Plotting LISA map**
 
-**For weekday morning peak:**
+
+The code chunk below is used to plot the LISA Map for weekday morning peak
 
 ```{r}
-HSCA_sig6_9 <- HSCA6_9  %>%
-  filter(p_sim < 0.05)
+honeycomb_count6_9.localMI$Sum_TRIPS <- Sum_TRIPS6_9
+colors <- c("#ffffff", "#2c7bb6", "#abd9e9", "#fdae61", "#d7191c")
+clusters <- c("insignificant", "low-low", "low-high", "high-low", "high-high")
+
 tmap_mode("view")
-tm_shape(HSCA6_9) +
-  tm_polygons() +
-  tm_borders(alpha = 0.5) +
-  tm_shape(HSCA_sig6_9) +
-  tm_fill("gi_star") + 
-  tm_borders(alpha = 0.4)
+LISA6_9 <- tm_shape(honeycomb_count6_9.localMI) +
+  tm_fill(col = "Sum_TRIPS", 
+          style = "cat", 
+          palette = colors[c(sort(unique(Sum_TRIPS6_9)))+1], 
+          labels = clusters[c(sort(unique(Sum_TRIPS6_9)))+1]) +
+  tm_borders(alpha=0.7)
+
+LISA6_9
 ```
 
-During the weekday morning peak (6am to 9am), significant hot spots and clusters emerge near key transit hubs, specifically around the Woodlands checkpoint, Woodlands MRT, and Boon Lay Interchange. These locations exhibit concentrated high-value clusters, albeit relatively small with 3 to 4 interconnected hexagons. Additionally, a statistically significant warm spot is identified near Clementi MRT, featuring a medium-sized cluster spanning 8 connected hexagons.
+During the weekday morning peak (6am to 9am), statistically significant clusters emerge in major residential areas and near MRT stations with connecting services like LRT or bus interchanges. There are circa 11 high-high clusters. Prominent high-high zones appear at transit hubs, including Woodlands Checkpoint, Boon Lay MRT/Interchange, Bukit Panjang MRT, Toa Payoh MRT/Interchange, and Bedok MRT/Interchange. These high-high clusters are often surrounded by similar clusters and some low-high clusters, suggesting a potential proximity limit for bus travelers.
 
-In contrast, larger clusters, while less warm, characterize zones near Tampines and Ang Mo Kio bus interchanges, with more than 9 interconnected hexagons. This suggests a notable preference for bus usage among residents in these residential areas during the morning peak, where bus trips were taken likely closer to their homes rather than the interchange itself. To validate these findings, a thorough comparison with data from other modes of public transport in these residential zones is essential. This holistic analysis will help confirm commuting preferences and guide potential adjustments to bus frequencies to better align with the observed demand during the weekday morning peak.
+City areas and industrial zones show statistical insignificance during this period due to lower activity levels. Excluding Woodlands Checkpoint, the identified high-high zones predominantly lie in residential areas, indicating a reliance on buses for morning commutes. The presence of high values in these zones may also be attributed to individuals taking buses after clearing the checkpoint to reach workplaces, emphasizing the significance of transit hubs during the morning peak. Further investigation is necessary for conclusive insights into these patterns.
 
-**For weekday evening peak:**
 
+Repeat the same for the other intervals
+
+For weekday evening peak:
 ```{r}
-HSCA_sig17_20 <- HSCA17_20 %>%
-  filter(p_sim < 0.05)
+honeycomb_count17_20.localMI$Sum_TRIPS <- Sum_TRIPS17_20
+colors <- c("#ffffff", "#2c7bb6", "#abd9e9", "#fdae61", "#d7191c")
+clusters <- c("insignificant", "low-low", "low-high", "high-low", "high-high")
+
 tmap_mode("view")
-tm_shape(HSCA17_20) +
-  tm_polygons() +
-  tm_borders(alpha = 0.5) +
-tm_shape(HSCA_sig17_20) +
-  tm_fill("gi_star") + 
-  tm_borders(alpha = 0.4)
+LISA17_20 <- tm_shape(honeycomb_count17_20.localMI) +
+  tm_fill(col = "Sum_TRIPS", 
+          style = "cat", 
+          palette = colors[c(sort(unique(Sum_TRIPS17_20)))+1], 
+          labels = clusters[c(sort(unique(Sum_TRIPS17_20)))+1]) +
+  tm_borders(alpha=0.7)
+
+LISA17_20
 ```
+During the weekday evening peak (5pm to 8pm), statistical significant clusters mostly showed up at major residential areas, MRT stations in the east side of Singapore,. The no. of high-high clusters have visibily decreased suggesting a potential shift in preference away from buses during this period. A comprehensive study of alternative public transport choices could offer deeper insights into this trend.
 
-During the weekday evening peak (5pm to 8pm), significant hot spots and clusters persist near transit hubs, particularly around Woodlands MRT and Boon Lay Interchange. Notably, a hotter spot near Tampines Bus Interchange emerges, but with a reduced number of connected hexagons, indicating a likely preference for transiting to homes via the bus interchange. Further investigation into Tampines bus interchange operations is recommended to assess the adequacy of current bus frequencies and routes.
+Transit hubs, including Woodlands Checkpoint, Toa Payoh MRT/Interchange, Tampines MRT/Interchange, and Bedok MRT/Interchange, continue to exhibit prominent high-high zones. These clusters are surrounded by similar high-high clusters and some low-high clusters, emphasizing their central role in evening commutes.
 
-Contrastingly, the cluster at Woodlands checkpoint diminishes during this period, accompanied by a drop in Gi\* value. This suggests a shift in passenger behavior, possibly indicating higher bus usage for transit in and out of the checkpoint during the weekday morning peak and reduced reliance during the evening peak. A comprehensive study on the commuting habits and bus ridership of Singaporeans and Malaysians working across borders can offer valuable insights into this observed drop, informing potential adjustments to transportation strategies.
+Additionally, a high-high cluster emerges along Orchard Rd, likely representing individuals commuting back home after dinner or evening activities in the district. Further analysis may reveal patterns in transportation choices during the weekday evening peak, guiding potential adjustments in bus services.
 
-**For weekend/holidays morning peak:**
 
+For weekend/holidays morning peak:
 ```{r}
-HSCA_sig11_14 <- HSCA11_14  %>%
-  filter(p_sim < 0.05)
+honeycomb_count11_14.localMI$Sum_TRIPS <- Sum_TRIPS11_14
+colors <- c("#ffffff", "#2c7bb6", "#abd9e9", "#fdae61", "#d7191c")
+clusters <- c("insignificant", "low-low", "low-high", "high-low", "high-high")
+
 tmap_mode("view")
-tm_shape(HSCA11_14) +
-  tm_polygons() +
-  tm_borders(alpha = 0.5) +
-tm_shape(HSCA_sig11_14) +
-  tm_fill("gi_star") + 
-  tm_borders(alpha = 0.4)
+LISA11_14 <- tm_shape(honeycomb_count11_14.localMI) +
+  tm_fill(col = "Sum_TRIPS", 
+          style = "cat", 
+          palette = colors[c(sort(unique(Sum_TRIPS11_14)))+1], 
+          labels = clusters[c(sort(unique(Sum_TRIPS11_14)))+1]) +
+  tm_borders(alpha=0.7)
+
+LISA11_14
 ```
+During the weekend morning peak (11am to 2pm), statistically significant clusters showed up mostly at major residential areas, MRT stations in the east side of Singapore, and the city fringe. Notably, high-high clusters appear with specific focus areas near heartland malls in Hougang, Bukit Panjang, Bugis MRT/Bugis Junction, and Bukit Panjang MRT/Junction10. 
 
-During the weekend/holidays morning peak (11 am to 2 pm), notable hot spots and clusters persist at key transit hubs, including Woodlands checkpoint, Woodlands MRT, Boon Lay Interchange, and newly seen clusters at Ang Mo Kio, Tampines, and Bedok bus interchanges. Woodlands checkpoint exhibits a hotter cluster with increased connected hexagons, suggesting heightened ridership to and from the checkpoint.
+Observations near Bugis and Bukit Panjang noted they are strategically located near shopping malls and places of worship. This suggest that post-worship and lunch, passengers utilize transportation from these areas to return home or visit other places. Conducting further demographic studies could offer valuable insights into the commuting habits of passengers during weekend mornings, using these locations as test sites. 
 
-Medium-sized clusters are observed near Bugis MRT/Bugis Junction and Bukit Panjang MRT/Junction10, strategically located near shopping malls and places of worship, such as Sri Mrugugan Hill Temple in Bukit Panjang, Sri Krishnan Temple, and a Buddhist temple. This aligns with the likelihood of individuals engaging in religious activities during weekends. With the weekend peak starting at 11 am, post-worship, passengers are likely utilizing transportation from these areas to return home or visit other places. Further demographic studies could provide valuable insights into the commuting habits of these passengers during weekend mornings.
+Transit hubs like Woodlands Checkpoint, Toa Payoh MRT/Interchange, Tampines MRT/Interchange, and Bedok MRT/Interchange maintain high-high zones, surrounded by similar clusters and some low-high clusters. 
+
 
 For weekend/holidays evening peak:
 
 ```{r}
-HSCA_sig16_19 <- HSCA16_19  %>%
-  filter(p_sim < 0.05)
+honeycomb_count16_19.localMI$Sum_TRIPS <- Sum_TRIPS16_19
+colors <- c("#ffffff", "#2c7bb6", "#abd9e9", "#fdae61", "#d7191c")
+clusters <- c("insignificant", "low-low", "low-high", "high-low", "high-high")
+
 tmap_mode("view")
-tm_shape(HSCA16_19) +
-  tm_polygons() +
-  tm_borders(alpha = 0.5) +
-tm_shape(HSCA_sig16_19) +
-  tm_fill("gi_star") + 
-  tm_borders(alpha = 0.4)
+LISA16_19 <- tm_shape(honeycomb_count16_19.localMI) +
+  tm_fill(col = "Sum_TRIPS", 
+          style = "cat", 
+          palette = colors[c(sort(unique(Sum_TRIPS16_19)))+1], 
+          labels = clusters[c(sort(unique(Sum_TRIPS16_19)))+1]) +
+  tm_borders(alpha=0.7)
+
+LISA16_19
 ```
+During the weekend evening peak (4 pm to 7 pm), significant clusters emerge predominantly in major residential areas, MRT stations on the east side of Singapore, and near shopping/entertainment districts. Notably, Bugis and Orchard Road exhibit significant clusters of high-high zones, indicating increased bus trips from these areas and a potentially higher population density during this peak period.
 
-During the weekend/holidays evening peak (4 pm to 7 pm), prominent hot spots and clusters persist at key transit hubs, notably Woodlands checkpoint, Woodlands MRT, and Boon Lay Interchange, maintaining consistency with the weekend morning peak. The previously identified hot clusters at Ang Mo Kio, Tampines, and Bedok bus interchanges also endure during the evening peak.
+To comprehend the reasons behind this surge, an in-depth study of bus trips specific to these zones during the weekend evening peak is crucial. Such research should encompass demographics and transport preferences to facilitate informed policy-making. Transit hubs like Woodlands Checkpoint, Toa Payoh MRT/Interchange, Tampines MRT/Interchange, and Bedok MRT/Interchange consistently maintain high-high zones, surrounded by similar clusters and some low-high clusters.
 
-Interestingly, bus trip clusters near Bukit Panjang no longer sustain in the evening, indicating a shift in commuting patterns. Conversely, warm clusters persist near Bugis MRT, a location associated with shopping and entertainment. Additionally, a warm spot is identified near Orchard/Somerset Rd, aligning with the entertainment and shopping district, showcasing continued demand in these areas during the weekend/holiday evening peak hours. Understanding these spatial patterns aids in optimizing transportation services to accommodate the persistent demand at specific transit hubs and entertainment districts..
 
 ## 6. Conclusion
 
-Spatial data analysis alongside clear visualization helps policy makers quickly identify patterns and areas of further investigation. On its own spatial data analysis needs to be coupled with domain expertise and study of the relevant field to provide meaningful discussions. While we identify relationships and clusters through this analysis, we could only make assumptions based on available data. Spatial analysis does however provides a quick understanding of the distribution, relationship and clustering patterns, which will help in further decision making.
+Spatial data analysis, complemented by effective visualization, facilitates swift pattern recognition and aids policymakers in pinpointing areas for deeper investigation. However, for meaningful discussions, spatial data analysis should be accompanied by domain expertise and an understanding of the specific field under consideration. While the analysis reveals relationships and clusters, it's crucial to acknowledge that assumptions are made based on the available data. Despite this limitation, spatial analysis offers a rapid comprehension of distribution, relationships, and clustering patterns, serving as a valuable tool for informed decision-making.
 
 ## 7. Future Works
 
-As discussed in various sections, there are information gaps that need to be filled up to provide a meaningful analysis, and recommendations against the findings. Collaboration with the transport authorities to better understand commuter trends and habits with regards to other public transport can be explored to bring about a more holistic view over the spatial information on public transport. Furthermore, this study only takes into the bus rides during peak periods for Oct 2023, and there may be room to expand further to cover more months or a wide coverage time period per month. Comparison of spatial observations with demographic factors can also help to policy makers determine how to tailor its transport system to the nation.
+The analysis reveals information gaps that hinder a comprehensive understanding of commuter trends and habits. To enhance the depth of spatial information on public transport, collaboration with transport authorities is recommended. Exploring other modes of public transport and their spatial dynamics will contribute to a more holistic view. It's important to note that the study focuses solely on bus rides during peak periods in October 2023, leaving room for expansion to cover additional months or a broader time frame each month. To refine the transport system, policymakers should consider comparing spatial observations with demographic factors, allowing for tailored adjustments to meet the nation's evolving needs.
