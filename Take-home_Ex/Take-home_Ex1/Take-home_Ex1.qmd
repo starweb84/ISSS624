@@ -43,31 +43,13 @@ The specific tasks of this exercise are as follows:
 
 -   With reference to the analysis results, draw statistical conclusions (not more than 200 words per visual).
 
-### **Objective 2: Emerging Hot Spot Analysis(EHSA)**
-
-With reference to the passenger trips by origin at the hexagon level for the four time intervals given above:
-
--   Perform Mann-Kendall Test by using the spatio-temporal local Gi\* values,
-
--   Prepared EHSA maps of the Gi\* values of the passenger trips by origin at the hexagon level. The maps should only display the significant (i.e. p-value \< 0.05).
-
--   With reference to the EHSA maps and data visualisation prepared, describe the spatial patterns reveled. (not more than 250 words per cluster).**Emerging Hot Spot Analysis(EHSA)**
-
-With reference to the passenger trips by origin at the hexagon level for the four time intervals given above:
-
--   Perform Mann-Kendall Test by using the spatio-temporal local Gi\* values,
-
--   Prepared EHSA maps of the Gi\* values of the passenger trips by origin at the hexagon level. The maps should only display the significant (i.e. p-value \< 0.05).
-
--   With reference to the EHSA maps and data visualisation prepared, describe the spatial patterns reveled. (not more than 250 words per cluster).
-
 ## **2. Installing and Loading the R Packages**
 
 For this exercise, in the following code chunk, `p_load()` from **pacman** package is used to install and load the following R packages into the R environment:
 
 -   **sf** for importing, managing, and processing geospatial data,
 
--   **sfdep/spdep ** to compute spatial weights using appropriate functions
+-   **sfdep/spdep** to compute spatial weights using appropriate functions
 
 -   **tmap** for creating thematic maps,
 
@@ -416,6 +398,8 @@ We now replicate the same data wrangling for the other 3 datatables: origin17_20
 Append the busstop data frame onto origin17_20 data frame
 
 ```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
 origin_data17_20 <- left_join(origin17_20 , busstop,
             by = c("ORIGIN_PT_CODE" = "BUS_STOP_N")) %>%
   rename(ORIGIN_BS = ORIGIN_PT_CODE)
@@ -424,6 +408,8 @@ origin_data17_20 <- left_join(origin17_20 , busstop,
 We check for duplicating records
 
 ```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
 duplicate17_20 <- origin_data17_20 %>%
   group_by_all() %>%
   filter(n()>1) %>%
@@ -433,24 +419,32 @@ duplicate17_20 <- origin_data17_20 %>%
 We use the code chunk below to retain the unique records.
 
 ```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
 origin_data17_20 <- unique(origin_data17_20)
 ```
 
 Using head(), we noticed that the origin_data17_20 does not appear to be in simple feature form.
 
 ```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
 head(origin_data17_20, n=5)
 ```
 
 In the following section, we will create a Choropleth map with a hexagon layer. The code utilises a function called st_make_grid, whcih needs to recognize origin_data as a simple feature form with geospatial information in order to process it. Hence, in anticipation of that, we will convert the data into simple feature form using the below code chunk.
 
 ```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
 origin_data17_20<- st_as_sf (origin_data17_20)
 ```
 
 A check indicates it now to be in simple feature form
 
 ```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
 head(origin_data17_20, n=5)
 ```
 
@@ -461,6 +455,8 @@ head(origin_data17_20, n=5)
 Append the busstop data frame onto origin11_14 data frame
 
 ```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
 origin_data11_14 <- left_join(origin11_14 , busstop,
             by = c("ORIGIN_PT_CODE" = "BUS_STOP_N")) %>%
   rename(ORIGIN_BS = ORIGIN_PT_CODE)
@@ -469,6 +465,8 @@ origin_data11_14 <- left_join(origin11_14 , busstop,
 We check for duplicating records
 
 ```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
 duplicate11_14 <- origin_data11_14 %>%
   group_by_all() %>%
   filter(n()>1) %>%
@@ -478,24 +476,32 @@ duplicate11_14 <- origin_data11_14 %>%
 We use the code chunk below to retain the unique records.
 
 ```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
 origin_data11_14 <- unique(origin_data11_14)
 ```
 
 Using head(), we noticed that the origin_data11_14 does not appear to be in simple feature form.
 
 ```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
 head(origin_data11_14, n=5)
 ```
 
 In the following section, we will create a Choropleth map with a hexagon layer. The code utilises a function called st_make_grid, whcih needs to recognize origin_data as a simple feature form with geospatial information in order to process it. Hence, in anticipation of that, we will convert the data into simple feature form using the below code chunk.
 
 ```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
 origin_data11_14<- st_as_sf (origin_data11_14)
 ```
 
 A check indicates it now to be in simple feature form
 
 ```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
 head(origin_data11_14, n=5)
 ```
 
@@ -506,6 +512,8 @@ head(origin_data11_14, n=5)
 Append the busstop data frame onto origin16_19 data frame
 
 ```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
 origin_data16_19 <- left_join(origin16_19 , busstop,
             by = c("ORIGIN_PT_CODE" = "BUS_STOP_N")) %>%
   rename(ORIGIN_BS = ORIGIN_PT_CODE)
@@ -514,6 +522,8 @@ origin_data16_19 <- left_join(origin16_19 , busstop,
 We check for duplicating records
 
 ```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
 duplicate16_19 <- origin_data16_19 %>%
   group_by_all() %>%
   filter(n()>1) %>%
@@ -523,24 +533,32 @@ duplicate16_19 <- origin_data16_19 %>%
 We use the code chunk below to retain the unique records.
 
 ```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
 origin_data16_19 <- unique(origin_data16_19)
 ```
 
 Using head(), we noticed that the origin_data16_19 does not appear to be in simple feature form.
 
 ```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
 head(origin_data16_19, n=5)
 ```
 
 In the following section, we will create a Choropleth map with a hexagon layer. The code utilises a function called st_make_grid, whcih needs to recognize origin_data as a simple feature form with geospatial information in order to process it. Hence, in anticipation of that, we will convert the data into simple feature form using the below code chunk.
 
 ```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
 origin_data16_19<- st_as_sf (origin_data16_19)
 ```
 
 A check indicates it now to be in simple feature form
 
 ```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
 head(origin_data16_19, n=5)
 ```
 
@@ -833,6 +851,8 @@ In the following code chunk, we use map_dbl() to transform the geometry of each 
 
 We check the first few observations to see if things are formatted correctly.
 
+**For weekday morning peak**
+
 ```{r}
 longitude6_9 <- map_dbl(honeycomb_count6_9$geometry, ~st_centroid(.x)[[1]])
 latitude6_9 <- map_dbl(honeycomb_count6_9$geometry, ~st_centroid(.x)[[2]])
@@ -840,6 +860,8 @@ coords6_9 <- cbind(longitude6_9, latitude6_9)
 
 head(coords6_9)
 ```
+
+In the following code chunk, we define k = 8 to find the k-nearest neighbours using knearineigh() and knn2nb() to return a list of integer vectors containing neighbour number ids.
 
 ```{r}
 knn86_9 <- knn2nb(knearneigh(coords6_9, k = 8))
@@ -879,7 +901,7 @@ The Monte Carlo simulation generates a very small p-value, i.e. \< 0.05 (thus st
 
 We repeat the above for the other 3 intervals.
 
-For Weekday afternoon peak:
+**For Weekday afternoon peak:**
 
 ```{r}
 #| code-fold: true
@@ -914,7 +936,7 @@ bperm
 
 From the Moran I test, Since p-value is very small, \< 0.05 (statistically significant) and the Moran I statistic (5.328283e-02) is positive, we reject the null hypothesis and conclude the no, of bus trips during the weekday evening peak period is spatially clustered The Monte Carlo simulation generates a very small p-value, i.e. \< 0.05 (thus statistically significant). Again, we can reject the null hypothesis and conclude that overall, the no, of bus trips during the weekday evening peak period is spatially clustered.
 
-For Weekend/holiday morning peak:
+**For Weekend/holiday morning peak:**
 
 ```{r}
 #| code-fold: true
@@ -949,7 +971,7 @@ bperm
 
 From the Moran I test, Since p-value is very small, \< 0.05 (statistically significant) and the Moran I statistic (1.079164e-01) is positive, we reject the null hypothesis and conclude the no, of bus trips during the weekday evening peak period is spatially clustered The Monte Carlo simulation generates a very small p-value, i.e. \< 0.05 (thus statistically significant). Again, we can reject the null hypothesis and conclude that overall, the no, of bus trips during the weekday evening peak period is spatially clustered.
 
-For Weekend/holiday evening peak:
+**For Weekend/holiday evening peak:**
 
 ```{r}
 #| code-fold: true
@@ -990,7 +1012,8 @@ In contrast to global spatial autocorrelation, which indicates whether a variabl
 
 The code chunks below are used to compute local Moran's I/ LISA statistics
 
-For weekday morning peak
+**For weekday morning peak**
+
 ```{r}
 fips6_9 <- order(honeycomb_count6_9$grid_id)
 localMI6_9 <- localmoran(honeycomb_count6_9$Sum_TRIPS, wm6_9)
@@ -1015,7 +1038,7 @@ The code chunk below lists the content of the local Moran matrix derived
 printCoefmat(data.frame(
     localMI6_9[fips6_9,],
     row.names=honeycomb_count6_9$grid_id[fips6_9])
-)
+) |> head(5)
 ```
 
 We will append the local Moran's I dataframe (i.e. localMI) onto the honeycomb_count6_9 dataframe using the following code chunk.
@@ -1025,9 +1048,9 @@ honeycomb_count6_9.localMI <- cbind(honeycomb_count6_9, localMI6_9)%>%
   rename(Pr.Ii = Pr.z....E.Ii..)
 ```
 
-We repeat the same for the other intervals
+***We repeat the same for the other intervals:***
 
-For weekday evening peak:
+**For weekday evening peak:**
 
 ```{r}
 #| code-fold: true
@@ -1040,13 +1063,14 @@ head(localMI17_20)
 printCoefmat(data.frame(
     localMI17_20[fips17_20,],
     row.names=honeycomb_count17_20$grid_id[fips17_20])
-)
+) |> head(5)
 
 honeycomb_count17_20.localMI <- cbind(honeycomb_count17_20, localMI17_20)%>%
   rename(Pr.Ii = Pr.z....E.Ii..)
 ```
 
-For weekend/holidays morning peak:
+**For weekend/holidays morning peak:**
+
 ```{r}
 #| code-fold: true
 #| code-summary: "Show the code" 
@@ -1058,13 +1082,14 @@ head(localMI11_14)
 printCoefmat(data.frame(
     localMI11_14[fips11_14,],
     row.names=honeycomb_count11_14$grid_id[fips11_14])
-)
+) |> head(5)
 
 honeycomb_count11_14.localMI <- cbind(honeycomb_count11_14, localMI11_14)%>%
   rename(Pr.Ii = Pr.z....E.Ii..)
 ```
 
-For weekend/holidays evening peak:
+**For weekend/holidays evening peak:**
+
 ```{r}
 #| code-fold: true
 #| code-summary: "Show the code" 
@@ -1076,7 +1101,7 @@ head(localMI16_19)
 printCoefmat(data.frame(
     localMI16_19[fips16_19,],
     row.names=honeycomb_count16_19$grid_id[fips16_19])
-)
+) |> head(5)
 
 honeycomb_count16_19.localMI <- cbind(honeycomb_count16_19, localMI16_19)%>%
   rename(Pr.Ii = Pr.z....E.Ii..)
@@ -1106,9 +1131,9 @@ Sum_TRIPS6_9[DV6_9 >0 & LM_I6_9>0] <- 4
 Sum_TRIPS6_9[localMI6_9[,5]>signif] <- 0
 ```
 
-Repeat the same for the other intervals
+***Repeat the same for the other intervals***
 
-For weekday evening peak:
+**For weekday evening peak:**
 
 ```{r}
 #| code-fold: true
@@ -1126,7 +1151,8 @@ Sum_TRIPS17_20[DV17_20 >0 & LM_I17_20>0] <- 4
 Sum_TRIPS17_20[localMI17_20[,5]>signif] <- 0
 ```
 
-For weekend/holidays morning peak:
+**For weekend/holidays morning peak:**
+
 ```{r}
 #| code-fold: true
 #| code-summary: "Show the code"
@@ -1143,7 +1169,7 @@ Sum_TRIPS11_14[DV11_14 >0 & LM_I11_14>0] <- 4
 Sum_TRIPS11_14[localMI11_14[,5]>signif] <- 0
 ```
 
-For weekend/holidays evening peak:
+**For weekend/holidays evening peak:**
 
 ```{r}
 #| code-fold: true
@@ -1161,9 +1187,9 @@ Sum_TRIPS16_19[DV16_19 >0 & LM_I16_19>0] <- 4
 Sum_TRIPS16_19[localMI16_19[,5]>signif] <- 0
 ```
 
-
 #### **5.3.1 Plotting LISA map**
 
+##### **5.3.1.1** LISA Map for weekday morning peak
 
 The code chunk below is used to plot the LISA Map for weekday morning peak
 
@@ -1187,10 +1213,10 @@ During the weekday morning peak (6am to 9am), statistically significant clusters
 
 City areas and industrial zones show statistical insignificance during this period due to lower activity levels. Excluding Woodlands Checkpoint, the identified high-high zones predominantly lie in residential areas, indicating a reliance on buses for morning commutes. The presence of high values in these zones may also be attributed to individuals taking buses after clearing the checkpoint to reach workplaces, emphasizing the significance of transit hubs during the morning peak. Further investigation is necessary for conclusive insights into these patterns.
 
+***Repeat the same for the other intervals***
 
-Repeat the same for the other intervals
+##### **5.3.1.2** LISA Map for weekday evening peak
 
-For weekday evening peak:
 ```{r}
 honeycomb_count17_20.localMI$Sum_TRIPS <- Sum_TRIPS17_20
 colors <- c("#ffffff", "#2c7bb6", "#abd9e9", "#fdae61", "#d7191c")
@@ -1206,14 +1232,15 @@ LISA17_20 <- tm_shape(honeycomb_count17_20.localMI) +
 
 LISA17_20
 ```
+
 During the weekday evening peak (5pm to 8pm), statistical significant clusters mostly showed up at major residential areas, MRT stations in the east side of Singapore,. The no. of high-high clusters have visibily decreased suggesting a potential shift in preference away from buses during this period. A comprehensive study of alternative public transport choices could offer deeper insights into this trend.
 
 Transit hubs, including Woodlands Checkpoint, Toa Payoh MRT/Interchange, Tampines MRT/Interchange, and Bedok MRT/Interchange, continue to exhibit prominent high-high zones. These clusters are surrounded by similar high-high clusters and some low-high clusters, emphasizing their central role in evening commutes.
 
 Additionally, a high-high cluster emerges along Orchard Rd, likely representing individuals commuting back home after dinner or evening activities in the district. Further analysis may reveal patterns in transportation choices during the weekday evening peak, guiding potential adjustments in bus services.
 
+##### **5.3.1.3** LISA Map for weekend/holidays morning peak
 
-For weekend/holidays morning peak:
 ```{r}
 honeycomb_count11_14.localMI$Sum_TRIPS <- Sum_TRIPS11_14
 colors <- c("#ffffff", "#2c7bb6", "#abd9e9", "#fdae61", "#d7191c")
@@ -1229,14 +1256,14 @@ LISA11_14 <- tm_shape(honeycomb_count11_14.localMI) +
 
 LISA11_14
 ```
-During the weekend morning peak (11am to 2pm), statistically significant clusters showed up mostly at major residential areas, MRT stations in the east side of Singapore, and the city fringe. Notably, high-high clusters appear with specific focus areas near heartland malls in Hougang, Bukit Panjang, Bugis MRT/Bugis Junction, and Bukit Panjang MRT/Junction10. 
 
-Observations near Bugis and Bukit Panjang noted they are strategically located near shopping malls and places of worship. This suggest that post-worship and lunch, passengers utilize transportation from these areas to return home or visit other places. Conducting further demographic studies could offer valuable insights into the commuting habits of passengers during weekend mornings, using these locations as test sites. 
+During the weekend morning peak (11am to 2pm), statistically significant clusters showed up mostly at major residential areas, MRT stations in the east side of Singapore, and the city fringe. Notably, high-high clusters appear with specific focus areas near heartland malls in Hougang, Bukit Panjang, Bugis MRT/Bugis Junction, and Bukit Panjang MRT/Junction10.
 
-Transit hubs like Woodlands Checkpoint, Toa Payoh MRT/Interchange, Tampines MRT/Interchange, and Bedok MRT/Interchange maintain high-high zones, surrounded by similar clusters and some low-high clusters. 
+Observations near Bugis and Bukit Panjang noted they are strategically located near shopping malls and places of worship. This suggest that post-worship and lunch, passengers utilize transportation from these areas to return home or visit other places. Conducting further demographic studies could offer valuable insights into the commuting habits of passengers during weekend mornings, using these locations as test sites.
 
+Transit hubs like Woodlands Checkpoint, Toa Payoh MRT/Interchange, Tampines MRT/Interchange, and Bedok MRT/Interchange maintain high-high zones, surrounded by similar clusters and some low-high clusters.
 
-For weekend/holidays evening peak:
+##### **5.3.14** LISA Map for weekend/holidays evening peak
 
 ```{r}
 honeycomb_count16_19.localMI$Sum_TRIPS <- Sum_TRIPS16_19
@@ -1253,10 +1280,10 @@ LISA16_19 <- tm_shape(honeycomb_count16_19.localMI) +
 
 LISA16_19
 ```
+
 During the weekend evening peak (4 pm to 7 pm), significant clusters emerge predominantly in major residential areas, MRT stations on the east side of Singapore, and near shopping/entertainment districts. Notably, Bugis and Orchard Road exhibit significant clusters of high-high zones, indicating increased bus trips from these areas and a potentially higher population density during this peak period.
 
 To comprehend the reasons behind this surge, an in-depth study of bus trips specific to these zones during the weekend evening peak is crucial. Such research should encompass demographics and transport preferences to facilitate informed policy-making. Transit hubs like Woodlands Checkpoint, Toa Payoh MRT/Interchange, Tampines MRT/Interchange, and Bedok MRT/Interchange consistently maintain high-high zones, surrounded by similar clusters and some low-high clusters.
-
 
 ## 6. Conclusion
 
