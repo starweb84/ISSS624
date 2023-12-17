@@ -1,0 +1,148 @@
+---
+title: "In-class Exercise 5"
+date: "16 December 2023"
+date-modified: "last-modified"
+format: html
+execute:
+  echo: true
+  eval: true
+  warning: false
+editor: visual
+---
+
+For this inc-lass: - no need to do Data preparation of in-class exercise. - focus on model calibration.
+
+Install spflow from github
+
+```{r}
+devtools::install_github("LukeCe/spflow")
+
+```
+
+```{r}
+pacman::p_load(tmap, sf, spdep, sp, Matrix, reshape2, knitr, tidyverse)
+```
+
+Data Prepration
+
+BEfore we calibrate spatial econometric interaction models by using spflow pcakage, 3 datasets are required. They are:
+1 - spatial weight
+2 - a tibble data.frame consist of origins, destination, flows and distances between the origins and destinations
+3- a tibble.data.frame constis of the explanaotry variables
+
+
+
+mpsz <- st_read(dsn = "data/geospatial",
+                layer = "MPSZ-2019") %>%
+  st_transform(crs=3414)
+
+
+
+busstop <- st_read(dsn = "data/geospatial",
+                    layer = "BusStop")
+
+
+
+mpsz$`BUSSTOP_COUNT` <- lengths (
+  st_intersects (mpsz, busstop))
+
+
+centriods <- suppressWarnings({
+  st_point_on_surface(st_geometry(mpsz_busstop))})
+
+mpsz_nb <- list (
+  "by_contiguity" = ploy2nb(mpsz_bustop),
+  "by_distance" = dnearneigh (centriods, d1 = 0 , d2 = 5000),
+  "by_knn" = knn2nb(knearneigh(centriods, 3))
+)
+
+
+Import and frame derive
+odbus6_9
+mpsz_busstop
+mpsz_nb
+busstop_mpsz -> select bus stop N and subzonc C drop geometry.
+create o_d data to find flow. 
+
+``` {r}
+mpsz_nb <- read_rds ("data/rds/mpsz_nb.rds")
+mpsz_flow <- read_rds ("data/rds/mpsz_flow.rds")
+mpsz_var <- read_rds ("data/rds/mpsz_var.rds")
+```
+
+```{r}
+mpsz_net <- spflow_network (
+  id_net = "sg",
+  node_neighborhood = 
+    nb2mat(mpsz_nb$by_contiguity),
+  node_data = mpsz_var,
+  node_key_column = "SZ_CODE")
+  
+mpsz_net
+```
+```{r}
+mpsz_net_pairs <- spflow_network_pair(
+  id_orig_net ="sg",
+  id_dest_net = "sg",
+  pair_data = mpsz_flow,
+  orig_key_column = "ORIGIN_SZ",
+  dest_key_column = "DESTIN_SZ")
+
+mpsz_net_pairs
+```
+
+```{r}
+mpsz_multi_net <- spflow_network_multi(mpsz_net, mpsz_net_pairs)
+
+mpsz_multi_net
+
+```
+
+```{r}
+cor_formula <- log (1 + TRIPS) ~
+  BUSSTOP_COUNT +
+  AGE7_12 +
+  AGE13_24 +
+  AGE25_64 +
+  SCHOOL_COUNT +
+  BUSINESS_COUNT +
+  RETAILS_COUNT +
+  FINSERV_COUNT +
+  P_(log(DISTANCE + 1))
+
+cor_mat <- pair_cor(
+  mpsz_multi_net, 
+  spflow_formula = cor_formula, 
+  add_lags_x = FALSE)
+
+colnames (cor_mat) <- paste0 (substr (colnames (cor_mat),1,3),". . .")
+
+cor_image(cor_mat)
+```
+)
+
+``` {r}
+base_model <- spflow(
+  spflow_formula = log(1 + TRIPS) ~
+    O_(BUSSTOP_COUNT +
+         AGE25_64) +
+    D_(SCHOOL_COUNT +
+         BUSINESS_COUNT + 
+         RETAILS_COUNT +
+         FINSERV_COUNT) + 
+    P_(log(DISTANCE +1)),
+  spflow_networks = mpsz_multi_net)
+  
+base_model
+```
+insert another line of code.
+
+```{r}
+corr_residual <- pair_cor(base_model)
+colnames(corr_residual) <- substr(colnames (corr_residual),1,3)
+cor_image(corr_residual)
+```
+
+
+```
+

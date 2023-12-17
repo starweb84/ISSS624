@@ -106,7 +106,7 @@ However, I realized that the weekday afternoon peak stats later than weekend/hol
 For purposes of consistency and comparison, I will rename peak hour period "Weekday afternoon peak" to "Weekday evening peak"
 
 | Peak hour period                           | Bus tap on time | Corresponding Table Name |
-|-----------------------------|------------------|-------------------------|
+|--------------------------------------------|-----------------|--------------------------|
 | Weekday morning peak                       | 6am to 9am      | origin6_9                |
 | ~~Weekday afternoon~~ Weekday evening peak | 5pm to 8pm      | origin17_20              |
 | Weekend/holiday morning peak               | 11am to 2pm     | origin11_14              |

@@ -9,3 +9,1255 @@ execute:
   warning: false
 editor: visual
 ---
+
+# **1. Overview**
+
+Commute behaviors are influenced by various factors, posing challenges for transport operators and urban managers. Understanding these dynamics traditionally involves costly and time-consuming commuter surveys, presenting drawbacks such as delayed data analysis and outdated information upon report completion. The impact of removing a public bus service along a route raises questions about how commuters, particularly those residing along the corridor, adapt to such changes.
+
+In the context of evolving digital urban infrastructures, the widespread integration of technologies like GPS in vehicles and SMART cards for public transport payments generates vast geospatially-referenced datasets. These datasets offer a valuable framework for tracking movement patterns over space and time. However, the rapid growth of such data has outpaced planners' capabilities to efficiently utilize and derive meaningful insights from it. This inefficiency hampers the return on investment in data collection and management, hindering the potential benefits that could be gained from understanding urban mobility patterns and addressing commuter needs effectively. Striking a balance between technological advancement and analytical capacity becomes crucial for unlocking the full potential of digital urban infrastructure data in shaping more responsive and efficient urban transportation systems.
+
+## **1.1 Motivation and Objective**
+
+This take-home exercise is motivated by two main reasons. Firstly, while there is a growing abundance of open data accessible to the public, there has been limited practical research demonstrating the effective integration, analysis, and modeling of these diverse data sources to inform policymaking decisions.
+
+Secondly, there is an absence of practical research illustrating the application of geospatial data science and analysis (GDSA) in facilitating decision-making.
+
+Hence, for this take-home exercise, we are conducting a case study to demonstrate the potential value of GDSA to integrate publicly available data from multiple sources for building a spatial interaction models to determine factors affecting urban mobility patterns of public bus transit.
+
+## **1.2 The Task**
+
+The specific tasks of this take-home exercise are as follows:
+
+### **Geospatial Data Science**
+
+-   Derive an analytical hexagon data of 375m (this distance is the perpendicular distance between the centre of the hexagon and its edges) to represent the [traffic analysis zone (TAZ)](https://tmg.utoronto.ca/files/Reports/Traffic-Zone-Guidance_March-2021_Final.pdf).
+
+-   With reference to the time intervals provided in the table below, construct an O-D matrix of commuter flows for a time interval of your choice by integrating *Passenger Volume by Origin Destination Bus Stops* and *Bus Stop Location* from [LTA DataMall](https://datamall.lta.gov.sg/content/datamall/en.html). The O-D matrix must be aggregated at the analytics hexagon level. **For purposes of this take home exercise, we will focus on analyzing the commuter flows for Weekday Morning Peak only.**
+
+    | Peak hour period             | Bus tap on time |
+    |------------------------------|-----------------|
+    | Weekday morning peak         | 6am to 9am      |
+    | Weekday afternoon peak       | 5pm to 8pm      |
+    | Weekend/holiday morning peak | 11am to 2pm     |
+    | Weekend/holiday evening peak | 4pm to 7pm      |
+
+-   Display the O-D flows of the passenger trips by using appropriate geovisualisation methods (not more than 5 maps).
+
+-   Describe the spatial patterns revealed by the geovisualisation (not more than 100 words per visual).
+
+-   Assemble at least three propulsive and three attractiveness variables by using aspatial and geospatial from publicly available sources.
+
+-   Compute a distance matrix by using the analytical hexagon data derived earlier.
+
+### **Spatial Interaction Modelling**
+
+-   Calibrate spatial interactive models to determine factors affecting urban commuting flows at the selected time interval.
+
+-   Present the modelling results by using appropriate geovisualisation and graphical visualisation methods. (Not more than 5 visuals)
+
+-   With reference to the Spatial Interaction Model output tables, maps and data visualisation prepared, describe the modelling results. (not more than 100 words per visual).
+
+# **2. The Data**
+
+## **2.1 Open Government Data**
+
+For the purpose of this assignment, data from several open government sources will be used:
+
+-   *Passenger Volume by Origin Destination Bus Stops*, *Bus Stop Location*, *Train Station* and *Train Station Exit Point*, just to name a few of them, from [LTA DataMall](https://datamall.lta.gov.sg/content/datamall/en.html).
+
+-   *Master Plan 2019 Subzone Boundary*, *HDB Property Information*, *School Directory and Information* and other relevant data from [Data.gov.sg](https://beta.data.gov.sg/).
+
+## **2.2 Specially collected data**
+
+-   *Business*, *entertn*, *F&B*, *FinServ*, *Leisure&Recreation* and *Retails* are geospatial data sets of the locations of business establishments, entertainments, food and beverage outlets, financial centres, leisure and recreation centres, retail and services stores/outlets compiled for urban mobility study. These have been extracted from elearn Take-home Exercise 2 data folder provided by the course instructor.
+
+-   HDB: This data set is the geocoded version of *HDB Property Information* data from data.gov. The data set is prepared using September 2021 data.
+
+Important: These data sets are specially prepared by the course instructor for teaching purposes. These data sets should not be used beyond ISSS624 without getting permission from the course instructor.
+
+# **3 Getting Started**
+
+## **3.1 Setting the Analytical Tools**
+
+The code chunk below installs and loads **tmap**, **sf**, sfdep, spdep, **performance**, **knitr**, **ggpubr**, **tidyverse**, **httr** packages into R environment.
+
+For this exercise, in the following code chunk, `p_load()` from **pacman** package is used to install and load the following R packages into the R environment:
+
+-   **sf/sp** for importing, managing, and processing geospatial data,
+
+-   **tmap** for creating thematic maps,
+
+-   **tidyverse** for performing data science tasks such as importing, wrangling and visualising data,
+
+-   **knitr** for creating html table.
+
+-   **stplanr** for generating flow lines
+
+-   **reshape** for generating pivot tables from matrix,
+
+-   **performance** for for model comparisons
+
+```{r}
+#label: setup
+pacman::p_load(sf, sp, tmap, tidyverse, knitr, stplanr, reshape2, performance)
+tmap_mode("plot")
+tmap_style("natural")
+set.seed(1234)
+```
+
+# **4 Data Preparation**
+
+## **4.1 Data**
+
+### 4.1.1 Importing data for create the map shape
+
+We will import the Master Plan 2019 Subzone Boundary data set. We will only keep the SUBZONE_N column and the geometry to use this as the base for our visualizations.
+
+**Singapore Boundary Data**
+
+```{r}
+mpsz <- st_read(dsn = "data/geospatial",
+                layer = "MPSZ-2019") %>%
+  select(SUBZONE_N)
+```
+
+This data frame uses the global GPS standard, WGS84. We will convert this to SVY21 projection.
+
+```{r}
+mpsz <- mpsz %>% st_transform(crs=3414)
+```
+
+Next, we import the bus stop data to generate the honeycomb grid based on locations with bus stops.
+
+**Bus Stop data**
+
+```{r}
+busstops <- st_read(dsn = "data/geospatial",
+                    layer = "BusStop")
+```
+
+We would want to use SVY21 as the projection for this study. Hence we check the data.
+
+```{r}
+st_crs(busstops)
+```
+
+We see EPSG value is 9001, which correspond to WGS84. We have to fix the projection by transforming to EPSG value of 3414, which corresponds to SVY21.
+
+```{r}
+busstops <- st_transform(busstops, crs = 3414)
+```
+
+We can do a visual check to confirm if the map has been imported as expected.
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+tmap_options(check.and.fix = TRUE)
+tm_shape(mpsz) +
+  tm_polygons("grey", title = "Singapore Boundary") +
+  tm_layout(main.title = "Map of bus stops in Singapore",
+            main.title.position = "center",
+            main.title.size = 1.0,
+            legend.height = 0.4, 
+            legend.width = 0.4,
+            frame = TRUE) +
+  tm_shape(busstops) +
+  tm_dots(col = "red", size = 0.005, title = "Bus Stops") +
+  tm_compass(type="8star", size = 2) +
+  tm_scale_bar() +
+  tm_grid(alpha = 0.2)
+```
+
+The map shows that there are bus stops that are outside Singapore bounds (grey area). We will remove them as we are only interested in bus stops within Singapore. We will remove the points outside Singapore from our busstops data by using st_intersection(). We will just retain the BUS_STOP_N to remove the columns we do not need, and check the map again.
+
+```{r}
+busstops <- busstops %>% 
+  st_intersection(mpsz) %>%
+  select(BUS_STOP_N,)
+```
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+tmap_options(check.and.fix = TRUE)
+tm_shape(mpsz) +
+  tm_polygons("grey", title = "Singapore Boundary") +
+  tm_layout(main.title = "Bus stops in Singapore",
+            main.title.position = "center",
+            main.title.size = 1.0,
+            legend.height = 0.4, 
+            legend.width = 0.4,
+            frame = TRUE) +
+  tm_shape(busstops) +
+  tm_dots(col = "red", size = 0.005, title = "Bus Stops") +
+  tm_compass(type="8star", size = 2) +
+  tm_scale_bar() +
+  tm_grid(alpha = 0.2)
+```
+
+We now save to the data
+
+```{r}
+write_rds(mpsz, "data/rds/mpsz.rds")
+write_rds(busstops, "data/rds/busstops.rds")
+```
+
+Creating the honeycomb grid Next, we create the honeycomb grid using st_make_grid(), providing cellsize of 750m.
+
+```{r}
+honeycomb <- busstops %>% st_make_grid(cellsize = 750,
+                                       what="polygons",
+                                       square = FALSE) %>%
+  st_sf() %>%
+  filter(lengths(st_intersects(geometry, busstops)) > 0)
+```
+
+We can plot the hexagon grid as follow:
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+tm_shape(mpsz) +
+  tm_polygons("grey", title = "Singapore Boundary", alpha = 0.5) +
+  tm_shape(honeycomb) +
+  tm_polygons(col = "blue", title = "Hexagons", alpha = 1) +
+  tm_layout(main.title = "Honeycomb grid with bus stops",
+            main.title.position = "center",
+            main.title.size = 1.0,
+            legend.height = 0.4, 
+            legend.width = 0.4,
+            frame = TRUE) +
+  tm_compass(type="8star", size = 2, bg.color = "white", bg.alpha = 0.5) +
+  tm_scale_bar(bg.color = "white", bg.alpha = 0.5) +
+  tm_shape(busstops) +
+  tm_dots(col = "red", size = 0.001, title = "Bus Stops") +
+  tm_grid(alpha = 0.2)
+```
+
+Assigning id to each hexagon We will assign id for each hexagon to be used as a unique identifier. We will store this id under the hexagon_id column.
+
+```{r}
+honeycomb$hexagon_id <- sprintf("H%04d", seq_len(nrow(honeycomb))) %>% as.factor()
+kable(head(honeycomb))
+```
+
+We save this main geometry
+
+```{r}
+write_rds(honeycomb, "data/rds/honeycomb.rds")
+```
+
+### **4.1.2 Importing the Origin-Destination (OD) data**
+
+We will start by loading the relevant datasets.
+
+```{r}
+mpsz <- read_rds("data/rds/mpsz.rds")
+honeycomb <- read_rds("data/rds/honeycomb.rds")
+busstops <- read_rds("data/rds/busstops.rds")
+```
+
+Next, we will import the *Passenger Volume by Origin Destination Bus Stops* data set downloaded from LTA DataMall by using `read_csv()` of **readr** package. For this hands-on we will use data captured in Oct 2023.
+
+```{r}
+odbus <- read_csv("data/aspatial/origin_destination_bus_202310.csv")
+```
+
+We will check odbus tibble data table by using the code chunk below.
+
+```{r}
+glimpse(odbus)
+```
+
+A quick check of odbus tibble data frame shows that the values in OROGIN_PT_CODE and DESTINATON_PT_CODE are char type. Hence no further conversion is required.
+
+### **4.1.3 Extracting the OD study data**
+
+For the purpose of this exercise, **we will focus on analyzing the commuter flows for Weekday Morning Peak only.** Hence we will extract commuting flows on weekday and between 6 and 9 o'clock.
+
+```{r}
+odbus6_9 <- odbus %>%
+  filter(DAY_TYPE == "WEEKDAY") %>%
+  filter(TIME_PER_HOUR >= 6 &
+           TIME_PER_HOUR <= 9) %>%
+  group_by(ORIGIN_PT_CODE,
+           DESTINATION_PT_CODE) %>%
+  summarise(TRIPS = sum(TOTAL_TRIPS)) %>%
+  rename(
+    ORIG_BUS_STOP_N = ORIGIN_PT_CODE,
+    DEST_BUS_STOP_N = DESTINATION_PT_CODE)
+
+glimpse(odbus6_9)
+```
+
+Creating lookup table to link bus stop to hexagon Next, we want to link the trip data to the their corresponding hexagon. We will create a lookup table via st_intersection().
+
+```{r}
+busstop_hex <- st_intersection(busstops, honeycomb) %>%
+  st_drop_geometry() %>%
+  select(c(BUS_STOP_N, hexagon_id))
+
+glimpse(busstop_hex)
+
+```
+
+Next, we want to associate each origin bus stop and destination bus stop to their respective hexagons. First, we do a check on odbus6_9 and busstop_hex data to find out if there is any difference in bus stops listed in the 2 sets of data.
+
+```{r}
+c(
+  odbus6_9$ORIG_BUS_STOP_N[!(odbus6_9$ORIG_BUS_STOP_N %in% busstop_hex$BUS_STOP_N)],
+  odbus6_9$DEST_BUS_STOP_N[!(odbus6_9$DEST_BUS_STOP_N %in% busstop_hex$BUS_STOP_N)]
+) %>% unique() %>% length()
+
+```
+
+```{r}
+c(busstop_hex$BUS_STOP_N) %>% unique() %>% length()
+```
+
+We note that 62 bus stops in odbus6_9 that are not in busstop_hex. This can be attributed to the bus stops we removed in the data preparation due to them being outside Singapore or also because the BusStops data set did not having complete information.
+
+As the effort required to manually map all of them (using google, LTA data) can be quite substantial and missing information consists of only approximately 1% of the odbus6_9 dataset, for the purposes of the study, we will remove these bus stops from our analysis as we do not have the geospatial data to associate to the hexagons from the data sets made available to us.
+
+we will use inner_join to keep only the observations in trips with the matching bus stops in busstop_hex.
+
+```{r}
+odbus6_9_hex <- odbus6_9 %>%
+  inner_join(busstop_hex,
+             by = c("ORIG_BUS_STOP_N" = "BUS_STOP_N")) %>%
+  rename(ORIG_HEX_ID = hexagon_id) %>%
+  inner_join(busstop_hex,
+             by = c("DEST_BUS_STOP_N" = "BUS_STOP_N")) %>%
+  rename(DEST_HEX_ID = hexagon_id)
+
+glimpse(odbus6_9_hex)
+```
+
+Next, we will sum up the no. of trips at hexagon level by aggregate using ORIG_HEX_ID and DEST_HEX_ID.
+
+```{r}
+od6_9hex <- odbus6_9_hex %>%
+  group_by(ORIG_HEX_ID, DEST_HEX_ID) %>%
+  summarise(TRIPS = sum(TRIPS))
+glimpse(od6_9hex)
+```
+
+We will save the output.
+
+```{r}
+write_rds(busstop_hex, "data/rds/busstop_hex.rds")
+write_rds(od6_9hex, "data/rds/od6_9hex.rds")
+write_rds(odbus6_9, "data/rds/odbus6_9.rds")
+```
+
+### 4,1,4 Creating the flow lines
+
+We will create the flow lines as follow using the below code chunk.
+
+```{r}
+flowlines <- od6_9hex %>% od2line(
+  honeycomb,
+  zone_code = "hexagon_id")
+```
+
+Next, we will do a check of the flow lines.
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+tm_shape(mpsz) +
+  tm_polygons("grey", title = "Singapore Boundary", alpha = 0.5) +
+  
+  tm_shape(honeycomb) +
+  tm_polygons(col = "blue", title = "Hexagons", alpha = 1) +
+  
+  tm_shape(flowlines) +
+  tm_lines(lwd = "TRIPS",
+           style = "quantile",
+           col = "red",
+           scale = c(0.1, 1, 3, 5, 7),
+           title.lwd = "# of bus trips",
+           alpha = 0.8) +
+  
+  tm_layout(main.title = "Bus Passenger flow for Weekday morning peak 6AM - 9AM (October 2023)",
+            main.title.position = "center",
+            main.title.size = 1.0,
+            legend.height = 0.4, 
+            legend.width = 0.4,
+            frame = TRUE) +
+  
+  tm_compass(type="8star", size = 2, bg.color = "white", bg.alpha = 0.5) +
+  tm_scale_bar(bg.color = "white", bg.alpha = 0.5) +
+  tm_grid(alpha = 0.2)
+```
+
+The above flowlines are very messy and highly skewed. Let us do a filter for trips \> 5000 to identify the trips that are more significant.
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+tm_shape(mpsz) +
+  tm_polygons("grey", title = "Singapore Boundary", alpha = 0.5) +
+  
+  tm_shape(honeycomb) +
+  tm_polygons(col = "blue", title = "Hexagons", alpha = 1) +
+  tm_shape(flowlines %>% filter(TRIPS >= 5000)) +
+  tm_lines(lwd = "TRIPS",
+           style = "quantile",
+           col = "red",
+           scale = c(0.1, 1, 3, 5, 7),
+           title.lwd = "# of bus trips",
+           alpha = 0.8) +
+  
+  tm_layout(main.title = "Bus Passenger flow for Weekday morning peak 6AM - 9AM (October 2023)",
+            main.title.position = "center",
+            main.title.size = 1.0,
+            legend.height = 0.4, 
+            legend.width = 0.4,
+            frame = TRUE) +
+  
+  tm_compass(type="8star", size = 2, bg.color = "white", bg.alpha = 0.5) +
+  tm_scale_bar(bg.color = "white", bg.alpha = 0.5) +
+  tm_grid(alpha = 0.2)
+  
+```
+
+We will save the flowlines output in rds format
+
+```{r}
+write_rds(flowlines, "data/rds/flowlines.rds")
+```
+
+Next, let us look determine the variables for attractiveness and propulsiveness
+
+### **4.1.5 Attractiveness Variables**
+
+We first initiate attractiveness from honeycomb.
+
+```{r}
+attractiveness <- honeycomb
+```
+
+For all the variables, we will use a combination of lengths() and st_intersects() to derive the count for the number of each location types for each hexagon.{
+
+**For Bus Stops:**
+
+```{r}
+attractiveness$BUS_STOP_COUNT <- lengths(
+  st_intersects(attractiveness, busstops))
+```
+
+**For Train Exit Stations**
+
+```{r}
+train_exits <- st_read(dsn = "data/geospatial", layer = "Train_Station_Exit_Layer")
+#EPSG value is 9001, which correspond to WGS84. To fix the projection, we have to transform to EPSG value of 3414, which corresponds to SVY21.
+train_exits <- st_transform(train_exits, crs = 3414)
+attractiveness$TRAIN_EXITS_COUNT <- lengths(st_intersects(attractiveness, train_exits))
+```
+
+**For FinServ**
+
+```{r}
+FinServ <- st_read(dsn = "data/geospatial", layer = "FinServ")
+#EPSG value is 9001, which correspond to WGS84. To fix the projection, we have to transform to EPSG value of 3414, which corresponds to SVY21.
+FinServ  <- st_transform(FinServ , crs = 3414)
+attractiveness$FinServ_COUNT <- lengths(st_intersects(attractiveness, FinServ ))
+```
+
+**For Business\`**
+
+```{r}
+Business <- st_read(dsn = "data/geospatial", layer = "Business")
+#EPSG value is 9001, which correspond to WGS84. To fix the projection, we have to transform to EPSG value of 3414, which corresponds to SVY21.
+Business  <- st_transform(Business , crs = 3414)
+attractiveness$Business_COUNT <- lengths(st_intersects(attractiveness, Business ))
+```
+
+**For Pre-Schools** We will import Pre-Schools Locations kml file from data.gov.sg. This variable is potentially one of the attractiveness of our destinations.
+
+```{r}
+preschool = st_read('data/geospatial/PreschoolsLocation.kml') %>% 
+  st_transform(preschool, crs=3414)
+attractiveness$preschool_COUNT <- lengths(st_intersects(attractiveness, preschool ))
+```
+
+```{r}
+glimpse(attractiveness)
+```
+
+We note attractiveness is still missing HDB_COUNT. As we note that additional processing is needed to derive that, we will save this data first.
+
+```{r}
+write_rds(attractiveness, "data/rds/attractiveness_no_hdb.rds")
+write_rds(train_exits, "data/rds/train_exits.rds")
+```
+
+#### **4.1.5.1 Derive Passengers Alighting from Bus Stop**
+
+For this section, we first read the two database below.
+
+```{r}
+busstop_hex <- read_rds("data/rds/busstop_hex.rds")
+odbus6_9 <- read_rds("data/rds/odbus6_9.rds")
+```
+
+We will aggregate the trips at destination at hexagon level and save as rds as it contains the data for propulsiveness variable.
+
+```{r}
+destbushex <- odbus6_9 %>%
+  inner_join(busstop_hex,
+             by = join_by(DEST_BUS_STOP_N == BUS_STOP_N)) %>%
+  group_by(hexagon_id) %>%
+  summarise(TRIPS = sum(TRIPS))
+
+glimpse(destbushex)
+
+write_rds(destbushex, "data/rds/destbushex.rds")
+```
+
+#### **4.1.5.2 Derive Train Passenger Data**
+
+For this section, we first read the two database below.
+
+```{r}
+honeycomb <- read_rds("data/rds/honeycomb.rds")
+train_exits <- read_rds("data/rds/train_exits.rds")
+```
+
+We will next import that datasets for train passenger data, station code and names.
+
+```{r}
+od_train <- read_csv("data/aspatial/origin_destination_train_202310.csv")
+stationcodes_names <- read_csv("data/aspatial/TrainStationCodesandChineseNames.csv")
+```
+
+Firstly we extract the station code and names so that we can connect the passenger data and train_exits data, given only ne has train station code and the other only have station name.
+
+```{r}
+stationcodes_names <- stationcodes_names %>%
+  select(stn_code, mrt_station_english)
+```
+
+Next we extract for weekday 6AM - 9AM, and the columns DESTINATION_PT_CODE and TOTAL_TRIPS since we are only interested in passengers leaving the train station.
+
+```{r}
+od_train_trips <- od_train %>%
+  filter(DAY_TYPE == "WEEKDAY") %>%
+  filter( TIME_PER_HOUR >= 6 &
+            TIME_PER_HOUR < 9
+          ) %>%
+  group_by(DESTINATION_PT_CODE) %>%
+  summarise(TRIPS = sum(TOTAL_TRIPS)) %>%
+  rename(TRAIN_ST_CODE = DESTINATION_PT_CODE)
+```
+
+Let's check the data we extracted so far.
+
+**Stationcodes_names**
+
+```{r}
+glimpse(stationcodes_names)
+
+```
+
+We note the station names are not capitalized. For the station names, we will capitalize the names as the names are also capitalized in train_exits.
+
+```{r}
+stationcodes_names <- stationcodes_names %>%
+  mutate(stn_name = toupper(mrt_station_english))
+glimpse(stationcodes_names)
+```
+
+**od_train_trips**
+
+```{r}
+glimpse(od_train_trips)
+
+```
+
+We note that there are multiple station codes in TRAIN_ST_CODE column. However, in station_codes_names, the stn_code column only has 1 station code. We have to separate these station codes into their own rows.
+
+```{r}
+od_train_trips <- od_train_trips %>%
+  separate_rows(TRAIN_ST_CODE, sep="/")
+glimpse(od_train_trips)
+
+```
+
+We check with both data frames now have the same noumber of rows to be mapped.
+
+```{r}
+nrow(stationcodes_names) == nrow(od_train_trips)
+```
+
+**train_exits**
+
+```{r}
+glimpse(train_exits)
+
+```
+
+We note that station names in train_exits have MRT STATION or LRT STATION in their names which is not present in station_code_names. In order to ensure that we can join the tables properly. we will remove this part of the station name.
+
+```{r}
+train_exits <- train_exits %>%
+  mutate(stn_name_short = gsub(" [ML]RT STATION$" , "", stn_name))
+glimpse(train_exits)
+```
+
+Next, let us look at joining the table for station_code_names and od_train_trips using the below code chunk.
+
+```{r}
+od_train_trips_with_name <- stationcodes_names %>%
+  left_join(od_train_trips,
+            by = join_by(stn_code == TRAIN_ST_CODE)) %>%
+  select(stn_name, TRIPS) %>%
+  unique()
+glimpse(od_train_trips_with_name)
+```
+
+Next, we will join the train_exits to the previous table.
+
+```{r}
+od_train_exits <- train_exits %>%
+  left_join(od_train_trips_with_name,
+            by = join_by(stn_name_short == stn_name)) %>%
+  rename(STN_NAME = stn_name) %>%
+  rename(EXIT_CODE = exit_code) %>%
+  select(STN_NAME, EXIT_CODE, TRIPS)
+```
+
+Now we can aggregate the trips at a hexagon level.
+
+```{r}
+od_train_hex <- honeycomb %>%
+  st_join(od_train_exits,
+          left = FALSE) %>%
+  group_by(hexagon_id) %>%
+  summarise(TRIPS = sum(TRIPS))
+glimpse(od_train_hex)
+```
+
+We will save this dataframe.
+
+```{r}
+write_rds(od_train_hex, "data/rds/od_train_hex.rds")
+```
+
+#### **4.1.5.3 Deriving HDB population**
+
+For this section, we will look at the following dataframes
+
+```{r}
+mpsz <- read_rds("data/rds/mpsz.rds")
+honeycomb <- read_rds("data/rds/honeycomb.rds")
+attractiveness <- read_rds("data/rds/attractiveness_no_hdb.rds")
+```
+
+To derive population data for each zone, we first initialize data to store hdb_vars from honeycomb.
+
+```{r}
+hdb_vars <- honeycomb
+```
+
+Next we import the aspatial data hdb.csv
+
+```{r}
+hdb_csv <- read_csv("data/aspatial/hdb.csv")
+```
+
+There appears to be geospatial information on lattidue and longtitude within the fields. Let us convert this into a sf data type, which uses SVY21.
+
+```{r}
+hdb_sf <- hdb_csv %>% st_as_sf(coords = c("lng", "lat"),
+                               crs = 4326) %>%
+  st_transform(crs = 3414)
+```
+
+Now let's add the HDB_COUNT column on hdb_vars dataframe using the below code chunk, and join it to the attractiveness dataframe.
+
+```{r}
+hdb_vars$HDB_COUNT <- lengths(st_intersects(hdb_vars, hdb_sf))
+attractiveness <- left_join(attractiveness,
+                            st_drop_geometry(hdb_vars))
+```
+
+We note that some of the dwellings are not listed as residential. For purposes of calculating population estimate, we will focus on residential properties, and use the dataframe below.
+
+```{r}
+
+hdb_filtered_sf <- hdb_sf %>%
+  filter(residential == "Y") %>%
+  select(total_dwelling_units)
+
+```
+
+Given HDB count can be a variable used, there should be consideration that HDB blocks are different sizes. Research noted that according to the 2022 information from Department of Statistics, the average household size is 3.09 person. As we do not have information of how many persons actually live in each househould, we will use total_dwelling_units multiplied by the average - 3.09 - to improve our population estimate, using the code chunk below.
+
+```{r}
+hdb_vars <- hdb_vars %>%
+  left_join(
+    st_intersection(hdb_filtered_sf, hdb_vars) %>%
+      st_drop_geometry() %>%
+      group_by(hexagon_id) %>%
+      summarise(HDB_RESIDENT_COUNT = sum(total_dwelling_units))
+  )
+glimpse(hdb_vars)
+
+```
+
+### **4.1.6 Deriving Schoool information**
+
+We will import the Schools general information in csv format , downloaded from School Directory and Information from data.gov.sg. It contains location (implicitly in the form of the field 'POSTAL_CODE') of the MOE kindergartens, Primary Schools , Secondary Schools and junior colleges. It does not contain ITEs , Polytechnics and Universities locations.
+
+```{r}
+school <- read_csv('data/aspatial/Generalinformationofschools.csv')
+```
+
+Geocoding the schools location We will use the OneMap API to retrieve the longitude (X) and latitude (Y) coordinates using the 'POSTAL_CODE' field. First load the httr package which works in a TIDY manner.
+
+```{r}
+#| eval: false
+library('httr')
+url <- 'https://www.onemap.gov.sg/api/common/elastic/search'
+
+postcodes <- school$`postal_code`
+```
+
+Next we create 2 frames to contain the results.
+
+```{r}
+#| eval: false
+found <- data.frame()
+not_found <- data.frame()
+
+
+for(postcode in postcodes) {
+  query <- list('searchVal' = postcode, 'returnGeom' = 'Y', 'getAddrDetails' = 'Y', 'pageNum' = '1')
+  res <- GET(url, query=query)
+
+  
+  if((content(res)$found)!=0){
+    found<-rbind(found, data.frame(content(res))[4:13])
+  } else{
+    not_found = data.frame(postcode)
+  }
+}
+```
+
+```{r}
+#| eval: false
+merged = merge(school, found, by.x = 'postal_code' , by.y='results.POSTAL', all=TRUE)
+```
+
+We next write a merged into a csv file and manually add the longitude and latitude (1.3887, 103.7652 ) of Zhenghua Secondary into the csv file. After manual edit, we save out the file as schools_geocoded1.csv and reload the schools_geocoded.csv file in R.
+
+```{r}
+#| eval: false
+write.csv(merged, file = 'data/aspatial/schools_geocoded.csv')
+write.csv(not_found, file = 'data/aspatial/not_found.csv')
+```
+
+```{r}
+sch <- read_csv('data/aspatial/schools_geocoded1.csv') %>% 
+  select(postal_code, school_name, results.LONGITUDE, results.LATITUDE )
+```
+
+Next we convert the data into sf point object in SVY21 format.
+
+```{r}
+sch_sf <- st_as_sf(sch,
+                   coords = c('results.LONGITUDE','results.LATITUDE'),
+                        crs=4326) %>% 
+  st_transform(crs=3414)
+
+attractiveness$School_COUNT <- lengths(st_intersects(attractiveness, sch_sf))
+attractiveness %>% arrange(desc(School_COUNT)) %>% head()
+```
+
+We will save the data at this stage.
+
+```{r}
+write_rds(hdb_vars, "data/rds/hdb_vars.rds")
+write_rds(attractiveness, "data/rds/attractiveness.rds")
+```
+
+### **4.1.6 Propulsiveness variables**
+
+Let's begin this section by loading the following data:
+
+```{r}
+honeycomb <- read_rds("data/rds/honeycomb.rds")
+hdb_vars <- read_rds("data/rds/hdb_vars.rds")
+destbushex <- read_rds("data/rds/destbushex.rds")
+od_train_hex <- read_rds("data/rds/od_train_hex.rds")
+```
+
+We initiate propulsiveness dataframe from honeycomb
+
+```{r}
+propulsiveness <- honeycomb
+```
+
+We then add pasenger and population values that we have previously derived using the below code chunk:
+
+```{r}
+propulsiveness <- propulsiveness %>%
+  left_join(st_drop_geometry(hdb_vars)) %>%
+  select(hexagon_id, HDB_RESIDENT_COUNT)
+
+propulsiveness <- propulsiveness %>%
+  left_join(st_drop_geometry(destbushex)) %>%
+  rename(BUS_ALIGHT_COUNT = TRIPS)
+
+propulsiveness <- propulsiveness %>%
+  left_join(st_drop_geometry(od_train_hex)) %>%
+  rename(TRAIN_ALIGHT_COUNT = TRIPS)
+
+glimpse(propulsiveness)
+```
+
+We noted that there are NA values. We will set these to 0.
+
+```{r}
+propulsiveness[is.na(propulsiveness)] <- 0
+```
+
+We will now save this dataframe.
+
+```{r}
+write_rds(propulsiveness, "data/rds/propulsiveness.rds")
+```
+
+### **4.1.7 Generating distance table**
+
+Now we can generate the distance table. Let us load the following dataframe first.
+
+```{r}
+honeycomb <- read_rds("data/rds/honeycomb.rds")
+```
+
+We will generate the distance matrix using the following code chunk.
+
+```{r}
+dist_mat <- spDists(as(honeycomb, "Spatial"),
+                    longlat = FALSE)
+colnames(dist_mat) <- paste0(honeycomb$hexagon_id)
+rownames(dist_mat) <- paste0(honeycomb$hexagon_id)
+glimpse(dist_mat)
+
+```
+
+Next we will generate a pivot table from our distance matrix and rename the columns as follow:
+
+```{r}
+dist_tbl <- melt(dist_mat) %>%
+  rename(DISTANCE = value) %>%
+  rename(ORIG_hexagon_id = Var1) %>%
+  rename(DEST_hexagon_id = Var2)
+glimpse(dist_tbl)
+```
+
+#### **4.1.7.1 Dealing with intra-zonal distances**
+
+Intra-zonal distances are currently at 0. This may be a result of passengers taking a short bus ride to the next stop. We would have to set these to a value other than 0, as in the latter part where we are using log-based Poisson models, log operations will be undefined if the variable is zero. Given the distance between centroids of adjacent hexagons is 750m and is 375m to their edges, we decided to adopt a percentile apporach where we would take 50% of 375m (188m - rounded up) as an estimate of average intra-zonal distance.
+
+```{r}
+dist_tbl$DISTANCE[dist_tbl$ORIG_HEX_ID == dist_tbl$DEST_HEX_ID] <- 188
+summary(dist_tbl$DISTANCE)
+```
+
+We will save this distribution table.
+
+```{r}
+write_rds(dist_tbl, "data/rds/dist_tbl.rds")
+```
+
+### 4.1.8 Combining the data
+
+Now we can combine the information to form the SIM_data set for modelling in the later stage. Let us load the needed data as follow:
+
+```{r}
+honeycomb <- read_rds("data/rds/honeycomb.rds")
+flowlines <- read_rds("data/rds/flowlines.rds")
+dist_tbl <- read_rds("data/rds/dist_tbl.rds")
+attractiveness <- read_rds("data/rds/attractiveness.rds")
+propulsiveness <- read_rds("data/rds/propulsiveness.rds")
+
+glimpse(honeycomb)
+glimpse(flowlines)
+glimpse(dist_tbl)
+glimpse(attractiveness)
+glimpse(propulsiveness)
+```
+
+As flowlines contain the geometry of flowlines and TRIPS data, we will use it to initialize the SIM_data table We also adjust the column names to ensure joining is possible.
+
+```{r}
+flowlines <- flowlines %>%
+  rename(
+    ORIG_hexagon_id = ORIG_HEX_ID,
+    DEST_hexagon_id = DEST_HEX_ID)
+
+glimpse(flowlines)
+```
+
+```{r}
+SIM_data <- flowlines
+```
+
+Next, we carry out the joining of the remaining tables.
+
+For propulsives and attractives, we add a prefix O\_ and D\_ to denote that propulsiveness columns are for origins and D are for destination
+
+```{r}
+SIM_data <- SIM_data %>% left_join(dist_tbl)
+glimpse(SIM_data)
+```
+
+```{r}
+propulsiveness <- propulsiveness%>%
+  st_drop_geometry() %>%
+    rename_with(~paste("O_", .x, sep = ""))
+
+glimpse (propulsiveness)
+
+```
+
+```{r}
+#join propulsiveness
+SIM_data <- left_join(
+  SIM_data,
+  propulsiveness, by = c("ORIG_hexagon_id"="O_hexagon_id"))
+
+glimpse(SIM_data)
+```
+
+```{r}
+attractiveness <- attractiveness%>%
+  st_drop_geometry() %>%
+    rename_with(~paste("D_", .x, sep = ""))
+
+glimpse (attractiveness)
+
+```
+
+```{r}
+SIM_data <- left_join(
+  SIM_data,
+  attractiveness, by = c("ORIG_hexagon_id"="D_hexagon_id"))
+
+glimpse(SIM_data)
+
+```
+
+We do a check of the consolidated data.
+
+```{r}
+summary(SIM_data)
+```
+
+In order to ensure the data is compatible with modelling, we need to remove the 0's as we will apply log function to them, which would result to undefined. We will set these to 0.99 so we are aware that .
+
+```{r}
+replace_zeroes <- function(data, col_name) {
+  data[[col_name]][data[[col_name]] == 0] <- 0.99
+  data
+}
+
+SIM_data <- SIM_data %>%
+  replace_zeroes("O_HDB_RESIDENT_COUNT") %>%
+  replace_zeroes("O_BUS_ALIGHT_COUNT") %>%
+  replace_zeroes("O_TRAIN_ALIGHT_COUNT") %>%
+  replace_zeroes("D_BUS_STOP_COUNT") %>%
+  replace_zeroes("D_TRAIN_EXITS_COUNT") %>%
+  replace_zeroes("D_HDB_COUNT") %>%
+  replace_zeroes("D_FinServ_COUNT") %>%
+  replace_zeroes("D_preschool_COUNT") %>%
+  replace_zeroes("D_School_COUNT") %>%
+  replace_zeroes("D_Business_COUNT")
+summary(SIM_data)
+```
+
+We now save the data frames.
+
+```{r}
+write_rds(flowlines, "data/rds/flowlines.rds")
+write_rds(SIM_data, "data/rds/SIM_data.rds")
+```
+
+# **5 Visualizing Spatial Interactions**
+
+Let us load the dataframes for the purpose of this section:
+
+```{r}
+mpsz <- read_rds("data/rds/mpsz.rds")
+honeycomb <- read_rds("data/rds/honeycomb.rds")
+flowlines <- read_rds("data/rds/flowlines.rds")
+SIM_data <- read_rds("data/rds/SIM_data.rds")
+propulsiveness <- read_rds("data/rds/propulsiveness.rds")
+attractiveness <- read_rds("data/rds/attractiveness.rds")
+```
+
+First we remove the intra-zonal flows to reduce no. of flow lines.
+
+```{r}
+flowlines_no_intra <- flowlines %>%
+  filter(ORIG_hexagon_id != DEST_hexagon_id)
+```
+
+Next we reviewed the quantile range, and noted that at 99%, there are some insights from the flows.
+
+```{R}
+quantile(flowlines_no_intra$TRIPS,
+         probs = c(0.85, 0.9, 0.95, 0.99, 1))
+```
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+tm_shape(mpsz) +
+  tm_polygons("grey", title = "Singapore Boundary", alpha = 0.5) +
+  
+  tm_shape(honeycomb) +
+  tm_polygons(col = "blue", title = "Hexagons", alpha = 1) +
+  
+  tm_shape(flowlines_no_intra %>% filter(TRIPS > 6096)) +
+  tm_lines(lwd = "TRIPS",
+           style = "quantile",
+           col = "red",
+           scale = c(0.1, 1, 3, 5, 7),
+           title.lwd = "# of bus trips",
+           alpha = 0.8) +
+  
+  tm_layout(main.title = "Top 1% Bus Passenger flow for Weekday 6am to 9am (October 2023)",
+            main.title.position = "center",
+            main.title.size = 1.0,
+            legend.height = 0.4, 
+            legend.width = 0.4,
+            frame = TRUE) +
+  
+  tm_compass(type="8star", size = 2, bg.color = "white", bg.alpha = 0.5) +
+  tm_scale_bar(bg.color = "white", bg.alpha = 0.5) +
+  tm_grid(alpha = 0.2)
+```
+
+The high flows are identified at the major transport hubs, such as Boon Lay, Bedok, Tampines, Clementi, and Woodlands interchange. In particular we see a concentration of lines around these areas, indicating usage of feeder services to likely reach the interchange or to their work locations in the mornings.While majority are rather short lines between circa 15km of each concentrated area, We do see people travel in longer distances such as that between tampines and woodlands. While bus rides are more preferred for relatively short distance travels, there are some longer distance lines which we can investigate further.
+
+## 5.1 Charting for TRIPS vs. DISTANCE
+
+Let us plot a chart for TRIPS vs. DISTANCE to assess further.
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+ggplot(SIM_data,
+       aes(x = DISTANCE, y = TRIPS)) +
+  geom_point() +
+  geom_hline(yintercept = 1417, color = "green", linetype = "dashed") +
+  annotate("text", x = 20000,
+           y = 600, label = "95th percentile",
+           hjust = -0.1, color = "green", size = 3) +
+  geom_hline(yintercept = 6096, color = "red", linetype = "dashed") +
+  annotate("text", x = 20000,
+           y = 1800, label = "99th percentile",
+           hjust = -0.1, color = "red", size = 3) +
+  labs(title = "Number of Trips as a Function of Distance",
+       x = "Distance (m)",
+       y = "Number of Trips")
+```
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+ggplot(SIM_data,
+       aes(x = log(DISTANCE), y = log(TRIPS))) +
+  geom_point() +
+  geom_smooth(method = lm)
+```
+
+As expected, maximum number of trips exponentially decrease as the distance increases. By and large, the further the distance, the less trips there are.
+
+Some outliers can be observed where zone pairs with almost 20km distance between them at near 99th percentile of TRIP values. There could be strong propulsive or attractive forces in these zones that attract passengers to ride the bus between those zones.
+
+## 5.2 Visualizing propulsive forces
+
+Let us plot the top 1% busiest flows, while looking at HDB population, transfers from train and buses to investigate their relationship with bus flows.
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+plot_propulsive <- function(var_name, title_comp) {
+  tm_shape(mpsz) +
+  tm_polygons("grey", title = "Singapore Boundary") +
+  
+  # Adding this layer underneath propulsiveness as we removed 0s. from the map
+  # so it won't skew the legend
+  tm_shape(honeycomb) +
+  tm_polygons(col = "grey") +
+  
+  tm_shape(propulsiveness %>% filter(if_any(var_name, ~. >= 1))) +
+  tm_polygons(var_name, palette = "Blues", style = "quantile") +
+    
+  tm_shape(flowlines_no_intra %>% filter(TRIPS > 6096)) +
+  tm_lines(lwd = "TRIPS",
+           style = "quantile",
+           col = "red",
+           scale = c(0.1, 1, 3, 5, 7, 10),
+           title.lwd = "# of bus trips",
+           n = 6,
+           alpha = 0.5) +
+  
+  tm_layout(main.title = paste("Top 1% Bus Passenger Flows and", title_comp),
+            main.title.position = "center",
+            main.title.size = 1.0,
+            legend.height = 0.35, 
+            legend.width = 0.35,
+            frame = TRUE) +
+  
+  tm_scale_bar(bg.color = "white", bg.alpha = 0.7, position = c("right", "top")) +
+  tm_compass(type="8star", size = 2, bg.color = "white",
+             bg.alpha = 0.5, position = c("right", "top")) +
+  tm_grid(alpha = 0.2) +
+  tm_credits("*Passenger data from weekday 6AM - 9AM (October 2023)",
+             bg.color = "white", bg.alpha = 0.7,
+             position = c("left", "bottom"))
+}
+```
+
+**HDB Population v Bus Passenger flows**
+
+```{r}
+plot_propulsive("HDB_RESIDENT_COUNT", "HDB Population")
+```
+
+**Train transfers v Bus Passenger flows**
+
+```{r}
+plot_propulsive("TRAIN_ALIGHT_COUNT", "Potential Transfers from Train")
+```
+
+**Bus Transfers vs Bus Passenger flows**
+
+```{r}
+plot_propulsive("BUS_ALIGHT_COUNT", "Potential Transfers from Bus")
+```
+
+We observe that both the HDB population and train exits appear to align closely to our flow lines. This is likely due to the fact that majority of persons are travelling from their residences to work during this period, where majority of them also alight at train stations. However we do note that for those areas with a higher indication, they also have other facilities near the train stations, such as entertaininment malls close to the vicinity where it may have led to higher counts.
+
+## 5.3 Visualizing attractive forces
+
+Let us plot the top 1% busiest flows, while looking at HDB count, entertainment, F%B, Leisure and Recreation, Bus stops and Train stations to investigate their relationship with bus flows.
+
+```{r}
+#| code-fold: true
+#| code-summary: "Show the code"
+plot_attractive <- function(var_name, title_comp) {
+  tm_shape(mpsz) +
+  tm_polygons("grey", title = "Singapore Boundary") +
+  
+  # Adding this layer underneath attractiveness as we removed 0s. from the map
+  # so it won't skew the legend
+  tm_shape(honeycomb) +
+  tm_polygons(col = "grey") +
+  
+  tm_shape(attractiveness %>% filter(if_any(var_name, ~. >= 1))) +
+  tm_polygons(var_name, palette = "Purples", style = "quantile") +
+    
+  tm_shape(flowlines_no_intra %>% filter(TRIPS > 6096)) +
+  tm_lines(lwd = "TRIPS",
+           style = "quantile",
+           col = "red",
+           scale = c(0.1, 1, 3, 5, 7, 10),
+           title.lwd = "# of bus trips",
+           n = 6,
+           alpha = 0.5) +
+  
+  tm_layout(main.title = paste("Top 1% Bus Passenger Flows and", title_comp),
+            main.title.position = "center",
+            main.title.size = 1.0,
+            legend.height = 0.35, 
+            legend.width = 0.35,
+            frame = TRUE) +
+  
+  tm_scale_bar(bg.color = "white", bg.alpha = 0.7, position = c("right", "top")) +
+  tm_compass(type="8star", size = 2, bg.color = "white",
+             bg.alpha = 0.5, position = c("right", "top")) +
+  tm_grid(alpha = 0.2) +
+  tm_credits("*Passenger data from Weekday 6am to 9am (October 2023)",
+             bg.color = "white", bg.alpha = 0.7,
+             position = c("left", "bottom"))
+}
+
+```
+
+**HDB Count v Bus Passenger flows**
+
+```{r}
+plot_attractive("BUS_STOP_COUNT", "Number of Bus Stops")
+```
+
+**Train transfers v Bus Passenger flows**
+
+```{r}
+plot_attractive("TRAIN_EXITS_COUNT", "Number of Train Stations")
+```
+
+**No. of HDB blocks v Bus Passenger flows**
+
+```{r}
+plot_attractive("HDB_COUNT", "Number of HDB blocks")
+```
+
+**No. of Entertainment location v Bus Passenger flows**
+
+```{r}
+plot_attractive("preschool_COUNT", "Number of Preschool Locations")
+```
+
+**No. of F&B Outlets v Bus Passenger flows**
+
+```{r}
+plot_attractive("School_COUNT", "Number of School Locations")
+```
+
+**No. of FinServ locations v Bus Passenger flows**
+
+```{r}
+plot_attractive("FinServ_COUNT", "Number of Financial Services Locations")
+```
+
+**No. of Business locations v Bus Passenger flows**
+
+```{r}
+plot_attractive("Business_COUNT", "Number of Business Locations")
+```
+
+Observations note that passengers often most of the flows surround areas with higher concentration of business, financial services, preschools and schools which is aligned to destinations we expect. We also note that a large no. of business concentration is identified in the western part of Singapore, where we saw some flows to. However, given that is quite sparse, it may indicate other forms of transport used to reach these locations. Interestingly, we do not see thick lines or flows into the city area where the financial services are congregated during this period. Further investigation into potential reasons,such as higher occurrences of traffic jams on the road, should be explored to determine if there is any correlation to the bus flows being not as high.
+
+We will now save the flowline data excluding the intraflows.
+
+```{r}
+write_rds(SIM_data, "data/rds/flowlines_no_intra.rds")
+```
+
+# 6 Spatial Interaction Modelling
+
+For this section, we will start by loading the following table:
+
+```{r}
+SIM_data <- read_rds("data/rds/SIM_data.rds")
+```
+
+We will use 4 log-based Poisson gravity models to perform our spatial interaction modelling, as detailed below with the respective formula
+
+Unconstrained: This will model the TRIPS using all the independent model components.
+
+origin constrained: This will model the TRIPS without the attractive forces.
+
+Destination constrained: This will model the TRIPS without the propulsive forces.
+
+Doubly constrained: This will model the TRIPS without the attractive and propulsive forces.
+
