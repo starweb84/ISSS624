@@ -351,7 +351,7 @@ write_rds(od6_9hex, "data/rds/od6_9hex.rds")
 write_rds(odbus6_9, "data/rds/odbus6_9.rds")
 ```
 
-### 4,1,4 Creating the flow lines
+### 4.1.4 Creating the flow lines
 
 We will create the flow lines as follow using the below code chunk.
 
@@ -1243,7 +1243,7 @@ We will now save the flowline data excluding the intraflows.
 write_rds(SIM_data, "data/rds/flowlines_no_intra.rds")
 ```
 
-# 6 Spatial Interaction Modelling
+# 6. Spatial Interaction Modelling
 
 For this section, we will start by loading the following table:
 
@@ -1305,7 +1305,7 @@ uncSIM
 ```
 
 ```{r}
-#| eval: false
+
 calc_r_squared(uncSIM)
 ```
 
@@ -1332,7 +1332,7 @@ write_rds(orcSIM, "data/rds/orcSIM.rds")
 ```{r}
 
 orcSIM <- read_rds("data/rds/orcSIM.rds")
-orcSIM
+
 ```
 
 ```{r}
@@ -1359,7 +1359,7 @@ write_rds(decSIM, "data/rds/decSIM.rds")
 ```{r}
 
 decSIM <- read_rds("data/rds/decSIM.rds")
-decSIM
+
 ```
 
 ```{r}
@@ -1384,7 +1384,7 @@ write_rds(dbcSIM, "data/rds/dbcSIM.rds")
 ```{r}
 
 dbcSIM <- read_rds("data/rds/dbcSIM.rds")
-dbcSIM
+
 ```
 
 ```{r}
@@ -1490,7 +1490,7 @@ From the 4 charts, we note that the points surround more closely to the predicte
 
 # **7. Conclusion and future work**
 
-The doubly constrained model appears to be able to predict more accurately the no. of trips taken between the zone pairs. However, we do not the existence of a number outlier zone pairs from the charts which suggest that there is opportunity to test if we want to perform prediction without some of these outliers, and address them seperately with another model or approach. This study indicates that geospatial data can indeed help to asssess and predict certain patterns which can help a policy maker decided on next steps. Having said that, our city planning does overlap in zones where there are high attractiveness and propulsiveness, i.e. schools, malls, interchanges, are often located centrally in certain zones. Considerations can be made if we can further breakdown the analysis to cater to specifc demographics who, in this particular study, is more prone to taking bus as a public transport.
+The doubly constrained model appears to be able to predict more accurately the no. of trips taken between the zone pairs. However, we do note the existence of a number outlier zone pairs from the charts which suggest that there is opportunity to test if we want to perform prediction without some of these outliers, and address them separately with another model or approach. This study indicates that geospatial data can indeed help to assess and predict certain patterns which can help a policy maker decided on next steps. Having said that, our city planning does overlap in zones where there are high attractiveness and propulsiveness, i.e. schools, malls, interchanges, are often located centrally in certain zones. Considerations can be made if we can further breakdown the analysis to cater to specifc demographics who, in this particular study, is more prone to taking bus as a public transport.
 
 # 8. References
 
